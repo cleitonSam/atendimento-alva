@@ -1,0 +1,23 @@
+# Donos do codigo. Quem aparece aqui e revisor obrigatorio dos arquivos correspondentes.
+# A ultima regra que casar com o arquivo e a que vale.
+
+# Padrao para todo o repositorio
+*                       @cleitonSam
+
+# Infraestrutura, automacao e seguranca
+/.github/               @cleitonSam
+/.github/workflows/     @cleitonSam
+/infra/                 @cleitonSam
+Dockerfile              @cleitonSam
+docker-compose*.yml     @cleitonSam
+
+# Dependencias e build
+package.json            @cleitonSam
+package-lock.json       @cleitonSam
+
+# Configuracao sensivel
+.env.example            @cleitonSam
+
+# Documentacao e decisoes de arquitetura
+/docs/                  @cleitonSam
+/docs/adr/              @cleitonSam

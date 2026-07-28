@@ -1,0 +1,94 @@
+# Pipeline de qualidade. Nenhum merge acontece com este workflow vermelho.
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+# Principio do menor privilegio: nada alem de leitura por padrao.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  commits:
+    name: Conventional Commits
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validar mensagens de commit
+        uses: wagoid/commitlint-github-action@v6
+
+  qualidade:
+    name: Lint, testes e build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detectar projeto Node
+        id: stack
+        run: |
+          if [ -f package.json ]; then
+            echo "node=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "node=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::package.json nao encontrado. Etapas Node ignoradas neste repositorio."
+          fi
+
+      - name: Configurar Node
+        if: steps.stack.outputs.node == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependencias
+        if: steps.stack.outputs.node == 'true'
+        run: npm ci --no-audit --no-fund
+
+      - name: Auditoria de dependencias
+        if: steps.stack.outputs.node == 'true'
+        run: npm audit --audit-level=high
+
+      - name: Formatacao
+        if: steps.stack.outputs.node == 'true'
+        run: npm run format:check --if-present
+
+      - name: Lint
+        if: steps.stack.outputs.node == 'true'
+        run: npm run lint --if-present
+
+      - name: Tipagem
+        if: steps.stack.outputs.node == 'true'
+        run: npm run typecheck --if-present
+
+      - name: Testes com cobertura
+        if: steps.stack.outputs.node == 'true'
+        run: npm run test:coverage --if-present
+
+      - name: Build de producao
+        if: steps.stack.outputs.node == 'true'
+        run: npm run build --if-present
+
+      - name: Publicar relatorio de cobertura
+        if: always() && steps.stack.outputs.node == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobertura
+          path: coverage/
+          if-no-files-found: ignore
+          retention-days: 7

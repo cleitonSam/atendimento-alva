@@ -1,0 +1,30 @@
+# Release automatizada por Conventional Commits.
+# Abre um PR de release com versao e CHANGELOG; ao mergear, cria a tag e a release.
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Preparar e publicar release
+    # Fica inativo no repositorio template e ativo automaticamente nos projetos gerados a partir dele.
+    if: github.repository != 'cleitonSam/template-base'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Release Please
+        uses: googleapis/release-please-action@v4
+        with:
+          # Troque para simple, python, ruby, java etc. conforme a stack.
+          release-type: node
+          token: ${{ secrets.GITHUB_TOKEN }}

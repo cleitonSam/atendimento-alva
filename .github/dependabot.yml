@@ -1,0 +1,59 @@
+# Atualizacao automatizada de dependencias.
+# Segurança tem prioridade: alerta critico gera PR imediato, o resto segue o agendamento.
+version: 2
+updates:
+  # --- Dependencias da aplicacao (npm) ---
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    versioning-strategy: increase
+    labels:
+      - dependencias
+      - seguranca
+    commit-message:
+      prefix: build
+      prefix-development: chore
+      include: scope
+    groups:
+      producao-patch-e-minor:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
+      desenvolvimento:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # Major exige revisao manual e nota no CHANGELOG.
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
+
+  # --- GitHub Actions ---
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    labels:
+      - ci
+      - seguranca
+    commit-message:
+      prefix: ci
+      include: scope
+
+  # --- Imagens Docker (habilite se o projeto usar container) ---
+  # - package-ecosystem: docker
+  #   directory: /
+  #   schedule:
+  #     interval: weekly

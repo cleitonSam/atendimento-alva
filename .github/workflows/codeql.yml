@@ -1,0 +1,66 @@
+# Analise estatica de seguranca do proprio codigo (SAST).
+# Roda somente quando arquivos de codigo mudam, mais uma varredura semanal.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**/*.js'
+      - '**/*.jsx'
+      - '**/*.ts'
+      - '**/*.tsx'
+      - '**/*.py'
+      - '**/*.rb'
+      - '**/*.go'
+      - '**/*.java'
+  pull_request:
+    branches: [main]
+    paths:
+      - '**/*.js'
+      - '**/*.jsx'
+      - '**/*.ts'
+      - '**/*.tsx'
+      - '**/*.py'
+      - '**/*.rb'
+      - '**/*.go'
+      - '**/*.java'
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analise:
+    name: Analisar ${{ matrix.language }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        # Ajuste conforme a stack do projeto:
+        # javascript-typescript, python, ruby, go, java-kotlin, csharp, cpp, swift
+        language: [javascript-typescript]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Inicializar CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+
+      - name: Build automatico
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Executar analise
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:${{ matrix.language }}'
