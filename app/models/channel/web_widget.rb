@@ -15,7 +15,7 @@
 #  website_url           :string
 #  welcome_tagline       :string
 #  welcome_title         :string
-#  widget_color          :string           default("#1f93ff")
+#  widget_color          :string           default("#0A0A0A")
 #  created_at            :datetime         not null
 #  updated_at            :datetime         not null
 #  account_id            :integer
@@ -71,7 +71,7 @@ class Channel::WebWidget < ApplicationRecord
         g.async = true;
         s.parentNode.insertBefore(g,s);
         g.onload=function(){
-          window.chatwootSDK.run({
+          window.alvaSDK.run({
             websiteToken: '#{website_token}',
             baseUrl: BASE_URL
           })

@@ -1,6 +1,4 @@
 const {
-  blue,
-  blueDark,
   green,
   greenDark,
   yellow,
@@ -15,18 +13,18 @@ const {
 
 export const colors = {
   woot: {
-    25: blue.blue2,
-    50: blue.blue3,
-    75: blue.blue4,
-    100: blue.blue5,
-    200: blue.blue7,
-    300: blue.blue8,
-    400: blueDark.blue11,
-    500: blueDark.blue10,
-    600: blueDark.blue9,
-    700: blueDark.blue8,
-    800: blueDark.blue6,
-    900: blueDark.blue2,
+    25: slate.slate2,
+    50: slate.slate3,
+    75: slate.slate4,
+    100: slate.slate5,
+    200: slate.slate7,
+    300: slate.slate8,
+    400: slate.slate11,
+    500: '#1c2024',
+    600: '#0a0a0a',
+    700: '#0a0a0a',
+    800: slateDark.slate4,
+    900: slateDark.slate1,
   },
   green: {
     50: greenDark.green12,
@@ -226,7 +224,8 @@ export const colors = {
     },
 
     black: '#000000',
-    brand: '#2781F6',
+    brand: 'rgb(var(--brand) / <alpha-value>)',
+    'brand-text': 'rgb(var(--brand-text) / <alpha-value>)',
     portal: 'var(--dynamic-portal-color)',
     'portal-soft': 'var(--dynamic-portal-color-soft)',
     'portal-faint': 'var(--dynamic-portal-color-faint)',

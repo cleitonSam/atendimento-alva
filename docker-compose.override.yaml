@@ -1,0 +1,17 @@
+# Override local (dev) — não versionar mudanças de infra no compose principal.
+# 1) Postgres com senha vazia exige trust auth pra inicializar.
+# 2) Não publicamos portas no host (evita conflito com outros projetos, ex: 5432 do ecormece-pg).
+#    O Rails/Sidekiq falam com postgres/redis pela rede interna do Docker.
+services:
+  postgres:
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    ports: !reset []
+  redis:
+    ports: !reset []
+  vite:
+    ports: !reset []
+  mailhog:
+    ports: !reset []
+  rails:
+    ports: !reset []

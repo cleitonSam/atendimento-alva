@@ -37,10 +37,14 @@
     --blue-6: 181 213 255;
     --blue-7: 155 195 252;
     --blue-8: 117 171 247;
-    --blue-9: 39 129 246;
+    --blue-9: 10 10 10;
     --blue-10: 16 115 233;
     --blue-11: 8 109 224;
     --blue-12: 11 50 101;
+
+    // ALVA brand (mono) - light
+    --brand: 10 10 10;
+    --brand-text: 255 255 255;
 
     --ruby-1: 255 252 253;
     --ruby-2: 255 247 248;
@@ -143,7 +147,7 @@
     --alpha-3: 255, 255, 255, 0.96;
     --black-alpha-1: 0, 0, 0, 0.12;
     --black-alpha-2: 0, 0, 0, 0.04;
-    --border-blue: 39, 129, 246, 0.5;
+    --border-blue: 10, 10, 10, 0.5;
     --white-alpha: 255, 255, 255, 0.8;
 
     // Voice call widget - light mode
@@ -189,10 +193,14 @@
     --blue-6: 29 84 134;
     --blue-7: 40 89 156;
     --blue-8: 48 106 186;
-    --blue-9: 39 129 246;
+    --blue-9: 244 243 241;
     --blue-10: 21 116 231;
     --blue-11: 126 182 255;
     --blue-12: 205 227 255;
+
+    // ALVA brand (mono) - dark
+    --brand: 244 243 241;
+    --brand-text: 10 10 10;
 
     --ruby-1: 25 17 19;
     --ruby-2: 30 21 23;
@@ -294,7 +302,7 @@
     --alpha-3: 33, 34, 38, 0.95;
     --black-alpha-1: 0, 0, 0, 0.3;
     --black-alpha-2: 0, 0, 0, 0.2;
-    --border-blue: 39, 129, 246, 0.5;
+    --border-blue: 244, 243, 241, 0.5;
     --border-container: 255, 255, 255, 0;
     --white-alpha: 255, 255, 255, 0.1;
 

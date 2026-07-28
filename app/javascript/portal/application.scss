@@ -4,8 +4,8 @@
 @import 'tailwindcss/utilities';
 
 @import 'widget/assets/scss/reset';
-@import 'shared/assets/fonts/InterDisplay/inter-display';
-@import 'shared/assets/fonts/inter';
+@import 'shared/assets/fonts/bricolage';
+@import 'shared/assets/fonts/hanken';
 @import 'dashboard/assets/scss/next-colors';
 
 html,
@@ -18,7 +18,7 @@ body {
 
 .font-default {
   font-family:
-    'InterDisplay',
+    'Hanken Grotesk',
     -apple-system,
     system-ui,
     BlinkMacSystemFont,

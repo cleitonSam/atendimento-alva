@@ -42,10 +42,20 @@ class Attachment < ApplicationRecord
   belongs_to :message
   has_one_attached :file
   before_save :set_extension
+  after_create_commit :enqueue_core_audio_transcription
   validate :acceptable_file
   validates :external_url, length: { maximum: Limits::URL_LENGTH_LIMIT }
   enum file_type: { :image => 0, :audio => 1, :video => 2, :file => 3, :location => 4, :fallback => 5, :share => 6, :story_mention => 7,
                     :contact => 8, :ig_reel => 9, :ig_post => 10, :ig_story => 11, :embed => 12 }
+
+  # Transcrição de áudio própria (MIT): enfileira quando a conta ligou o setting
+  # `audio_transcriptions`. Independe de enterprise/. Ver AudioTranscriptionService.
+  def enqueue_core_audio_transcription
+    return unless audio?
+    return unless ActiveModel::Type::Boolean.new.cast(account&.audio_transcriptions)
+
+    AudioTranscriptionJob.perform_later(id)
+  end
 
   def push_event_data
     return unless file_type

@@ -129,18 +129,18 @@ export const twilioTemplates = [
     template_type: 'quick_reply',
   },
   {
-    body: 'What type of Chatwoot installation are you using? Select "Chatwoot Cloud" if you are using app.chatwoot.com, otherwise select "Self-hosted Chatwoot".',
+    body: 'What type of ALVA IA TECH installation are you using? Select "ALVA IA TECH Cloud" if you are using app.chatwoot.com, otherwise select "Self-hosted ALVA IA TECH".',
     types: {
       'twilio/quick-reply': {
-        body: 'What type of Chatwoot installation are you using? Select "Chatwoot Cloud" if you are using app.chatwoot.com, otherwise select "Self-hosted Chatwoot".',
+        body: 'What type of ALVA IA TECH installation are you using? Select "ALVA IA TECH Cloud" if you are using app.chatwoot.com, otherwise select "Self-hosted ALVA IA TECH".',
         actions: [
           {
-            id: 'Chatwoot Cloud_payload',
-            title: 'Chatwoot Cloud',
+            id: 'ALVA IA TECH Cloud_payload',
+            title: 'ALVA IA TECH Cloud',
           },
           {
-            id: 'Self-hosted Chatwoot_payload',
-            title: 'Self-hosted Chatwoot',
+            id: 'Self-hosted ALVA IA TECH_payload',
+            title: 'Self-hosted ALVA IA TECH',
           },
         ],
       },

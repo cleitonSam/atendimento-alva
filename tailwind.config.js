@@ -40,9 +40,11 @@ const tailwindConfig = {
   theme: {
     extend: {
       fontFamily: {
-        sans: defaultSansFonts,
-        inter: ['Inter', ...defaultSansFonts],
-        interDisplay: ['InterDisplay', ...defaultSansFonts],
+        sans: ['Hanken Grotesk', ...defaultSansFonts],
+        inter: ['Hanken Grotesk', ...defaultSansFonts],
+        interDisplay: ['Bricolage Grotesque', ...defaultSansFonts],
+        hanken: ['Hanken Grotesk', ...defaultSansFonts],
+        bricolage: ['Bricolage Grotesque', ...defaultSansFonts],
       },
       fontWeight: {
         420: '420',

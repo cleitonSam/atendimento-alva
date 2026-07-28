@@ -25,7 +25,7 @@ const toggleSupportWidget = () => {
 };
 
 const setupListenerForWidgetEvent = () => {
-  window.addEventListener('chatwoot:on-message', () => {
+  window.addEventListener('alva:on-message', () => {
     toggleSupportWidgetVisibility();
   });
 };
