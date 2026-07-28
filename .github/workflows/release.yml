@@ -23,7 +23,7 @@ jobs:
       issues: write
     steps:
       - name: Release Please
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@v5
         with:
           # Troque para simple, python, ruby, java etc. conforme a stack.
           release-type: node
