@@ -34,6 +34,13 @@ class Whatsapp::Providers::UazapiService < Whatsapp::Providers::BaseService
     whatsapp_channel.mark_message_templates_updated
   end
 
+  # UAZAPI nao usa templates aprovados pela Meta -> o CSAT (e afins) vai por LINK
+  # (texto com a URL da pesquisa), nao por template. Retorna 'nao aprovado' para o
+  # CsatSurveyService cair no fluxo generico em vez do template Meta.
+  def get_template_status(_template_name)
+    { success: false, template: { status: 'NOT_APPLICABLE' } }
+  end
+
   # No momento da criacao da caixa ainda NAO ha token de instancia (ele nasce no
   # init/QR). Entao aqui validamos so que da pra alcancar o servidor: precisa da
   # URL e de pelo menos um token (admin para provisionar, ou o da instancia se ja
