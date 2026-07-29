@@ -18,8 +18,11 @@ class ConversationApi extends ApiClient {
     return axios.get(`${this.url}/unread_counts`);
   }
 
-  suggestReply(conversationID) {
-    return axios.post(`${this.url}/${conversationID}/suggest_reply`);
+  suggestReply(conversationID, draft = null) {
+    return axios.post(
+      `${this.url}/${conversationID}/suggest_reply`,
+      draft ? { draft } : {}
+    );
   }
 }
 

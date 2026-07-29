@@ -25,6 +25,14 @@ export default {
       type: Boolean,
       default: false,
     },
+    onImproveReply: {
+      type: Function,
+      default: () => {},
+    },
+    hasDraft: {
+      type: Boolean,
+      default: false,
+    },
     isNote: {
       type: Boolean,
       default: false,
@@ -304,6 +312,16 @@ export default {
         sm
         :disabled="isSuggestingReply"
         @click="onSuggestReply"
+      />
+      <NextButton
+        v-if="!isEditorDisabled && hasDraft"
+        v-tooltip.top-end="$t('CONVERSATION.REPLYBOX.AI_IMPROVE')"
+        icon="i-ph-magic-wand"
+        slate
+        faded
+        sm
+        :disabled="isSuggestingReply"
+        @click="onImproveReply"
       />
       <FileUpload
         v-if="showAttachButton"

@@ -5,8 +5,9 @@ class ReplySuggestionService
   DEFAULT_MODEL = 'gpt-4o-mini'.freeze
   MAX_CONTEXT_MESSAGES = 12
 
-  def initialize(conversation:)
+  def initialize(conversation:, draft: nil)
     @conversation = conversation
+    @draft = draft.presence
   end
 
   # Retorna { reply: '...' } em sucesso ou { error: '<motivo>' }.
@@ -53,16 +54,26 @@ class ReplySuggestionService
   end
 
   def prompt_messages
-    [{ role: 'system', content: system_prompt }] + history_messages
+    messages = [{ role: 'system', content: system_prompt }] + history_messages
+    messages << { role: 'user', content: "Rascunho do agente para melhorar:\n#{@draft}" } if @draft
+    messages
   end
 
   def system_prompt
-    <<~PROMPT.squish
-      Você é um agente de atendimento ao cliente prestativo e cordial. Escreva UMA resposta
-      curta, natural e no MESMO idioma do cliente para a última mensagem dele. Não invente
-      informações que você não tem. Não repita saudações se a conversa já começou. Responda
-      apenas com o texto da mensagem, sem aspas nem prefixos.
-    PROMPT
+    if @draft
+      <<~PROMPT.squish
+        Você melhora rascunhos de resposta de um agente de atendimento. Reescreva o rascunho
+        com clareza, correção gramatical e um tom cordial e profissional, MANTENDO o sentido e
+        o MESMO idioma. Responda apenas com o texto melhorado, sem aspas nem prefixos.
+      PROMPT
+    else
+      <<~PROMPT.squish
+        Você é um agente de atendimento ao cliente prestativo e cordial. Escreva UMA resposta
+        curta, natural e no MESMO idioma do cliente para a última mensagem dele. Não invente
+        informações que você não tem. Não repita saudações se a conversa já começou. Responda
+        apenas com o texto da mensagem, sem aspas nem prefixos.
+      PROMPT
+    end
   end
 
   # Últimas mensagens (entrada/saída, públicas, com conteúdo), em ordem cronológica.

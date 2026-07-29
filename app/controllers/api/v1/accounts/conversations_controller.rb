@@ -72,7 +72,7 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
   # Sugestão de resposta com IA (Captain-lite) — aditivo, código próprio.
   # Ver ReplySuggestionService (usa a integração OpenAI do Community).
   def suggest_reply
-    result = ReplySuggestionService.new(conversation: @conversation).perform
+    result = ReplySuggestionService.new(conversation: @conversation, draft: params[:draft]).perform
     if result[:reply]
       render json: { reply: result[:reply] }
     else

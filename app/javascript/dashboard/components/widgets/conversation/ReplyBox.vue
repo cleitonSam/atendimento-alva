@@ -575,6 +575,32 @@ export default {
         this.isSuggestingReply = false;
       }
     },
+    // Captain-lite: melhora o rascunho atual (reescreve com clareza/tom) e substitui.
+    async onImproveReply() {
+      const draft = this.message?.trim();
+      if (this.isSuggestingReply || !draft) return;
+      this.isSuggestingReply = true;
+      try {
+        const { data } = await ConversationApi.suggestReply(
+          this.currentChat.id,
+          draft
+        );
+        if (data.reply) {
+          this.message = data.reply;
+        }
+      } catch (error) {
+        const code = error?.response?.data?.error;
+        useAlert(
+          this.$t(
+            code === 'openai_not_configured'
+              ? 'CONVERSATION.REPLYBOX.AI_SUGGEST_NO_KEY'
+              : 'CONVERSATION.REPLYBOX.AI_SUGGEST_ERROR'
+          )
+        );
+      } finally {
+        this.isSuggestingReply = false;
+      }
+    },
     getDraftKey(
       conversationId = this.conversationIdByRoute,
       replyType = this.replyType
@@ -1463,7 +1489,9 @@ export default {
         :toggle-audio-recorder="toggleAudioRecorder"
         :toggle-emoji-picker="toggleEmojiPicker"
         :on-suggest-reply="onSuggestReply"
+        :on-improve-reply="onImproveReply"
         :is-suggesting-reply="isSuggestingReply"
+        :has-draft="message.trim().length > 0"
         :message="message"
         :portal-slug="connectedPortalSlug"
         :new-conversation-modal-active="newConversationModalActive"

@@ -232,6 +232,7 @@
       "AI_SUGGEST": "Sugerir resposta com IA",
       "AI_SUGGEST_NO_KEY": "Configure a integração OpenAI para usar sugestões de IA.",
       "AI_SUGGEST_ERROR": "Não foi possível gerar uma sugestão. Tente novamente.",
+      "AI_IMPROVE": "Melhorar rascunho com IA",
       "TIP_ATTACH_ICON": "Anexar arquivos",
       "TIP_AUDIORECORDER_ICON": "Gravar áudio",
       "TIP_AUDIORECORDER_PERMISSION": "Permitir acesso ao áudio",
