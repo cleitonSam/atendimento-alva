@@ -6,6 +6,7 @@ import Twilio from './Twilio.vue';
 import ThreeSixtyDialogWhatsapp from './360DialogWhatsapp.vue';
 import CloudWhatsapp from './CloudWhatsapp.vue';
 import WhatsappEmbeddedSignup from './WhatsappEmbeddedSignup.vue';
+import Uazapi from './Uazapi.vue';
 import ChannelSelector from 'dashboard/components/ChannelSelector.vue';
 import { useAccount } from 'dashboard/composables/useAccount';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
@@ -22,6 +23,7 @@ const PROVIDER_TYPES = {
   WHATSAPP_EMBEDDED: 'whatsapp_embedded',
   WHATSAPP_MANUAL: 'whatsapp_manual',
   THREE_SIXTY_DIALOG: '360dialog',
+  UAZAPI: 'uazapi',
 };
 
 const hasWhatsappAppId = computed(() => {
@@ -58,6 +60,12 @@ const availableProviders = computed(() => [
     title: t('INBOX_MGMT.ADD.WHATSAPP.PROVIDERS.TWILIO'),
     description: t('INBOX_MGMT.ADD.WHATSAPP.PROVIDERS.TWILIO_DESC'),
     icon: 'i-woot-twilio',
+  },
+  {
+    key: PROVIDER_TYPES.UAZAPI,
+    title: 'UAZAPI',
+    description: 'Conecte um número por QR code (WhatsApp via UAZAPI).',
+    icon: 'i-woot-whatsapp',
   },
 ]);
 
@@ -146,6 +154,7 @@ const handleManualLinkClick = () => {
         <ThreeSixtyDialogWhatsapp
           v-else-if="selectedProvider === PROVIDER_TYPES.THREE_SIXTY_DIALOG"
         />
+        <Uazapi v-else-if="selectedProvider === PROVIDER_TYPES.UAZAPI" />
         <CloudWhatsapp v-else />
       </div>
     </div>

@@ -287,6 +287,9 @@ Rails.application.routes.draw do
             get :health, on: :member
             post :register_webhook, on: :member
             post :reset_secret, on: :member
+            # UAZAPI (provider aditivo): provisiona a instancia + gera o QR e faz polling do status.
+            post :uazapi_setup, on: :member, to: 'uazapi_channels#setup'
+            get :uazapi_status, on: :member, to: 'uazapi_channels#status'
             if ChatwootApp.enterprise?
               resource :conference, only: %i[create destroy], controller: 'conference' do
                 get :token, on: :member

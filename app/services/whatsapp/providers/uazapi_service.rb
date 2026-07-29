@@ -32,14 +32,12 @@ class Whatsapp::Providers::UazapiService < Whatsapp::Providers::BaseService
     whatsapp_channel.mark_message_templates_updated
   end
 
+  # No momento da criacao da caixa ainda NAO ha token de instancia (ele nasce no
+  # init/QR). Entao aqui validamos so que da pra alcancar o servidor: precisa da
+  # URL e de pelo menos um token (admin para provisionar, ou o da instancia se ja
+  # existe). A conexao real acontece no fluxo de QR.
   def validate_provider_config?
-    return false if api_url.blank? || api_token.blank?
-
-    response = get('/instance/status')
-    response.present? && response['error'].blank?
-  rescue StandardError => e
-    Rails.logger.warn "[UAZAPI] validate_provider_config falhou: #{e.message}"
-    false
+    api_url.present? && (admin_token.present? || api_token.present?)
   end
 
   def api_headers
@@ -48,10 +46,23 @@ class Whatsapp::Providers::UazapiService < Whatsapp::Providers::BaseService
 
   # ---- ciclo de vida da instancia (QR / conexao) ----
 
-  # Cria a instancia no servidor (admintoken) e guarda o token retornado.
+  # Cria a instancia no servidor (admintoken). Devolve o token da instancia, que
+  # passa a ser usado em todas as chamadas por-numero (envio, status, connect).
   def create_instance(name)
     body = { name: name.to_s.parameterize.presence || "alva-#{SecureRandom.hex(4)}" }
-    admin_post('/instance/init', body)
+    response = admin_post('/instance/init', body) || {}
+    instance = response['instance'] || response
+    { token: instance['token'] || response['token'], name: instance['name'], status: instance['status'], raw: response }
+  end
+
+  # Aponta a instancia para o nosso webhook receber tudo (mensagens + status).
+  def register_webhook(callback_url)
+    post('/webhook', {
+           url: callback_url,
+           events: %w[messages messages_update connection presence],
+           enabled: true,
+           excludeMessages: %w[wasSentByApi]
+         })
   end
 
   # Inicia a conexao e retorna o QR code (data URL) para parear o numero.
