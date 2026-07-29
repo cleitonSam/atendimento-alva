@@ -12,10 +12,12 @@ class Whatsapp::IncomingMessageUazapiService
     return if from_me?           # eco do proprio numero
     return if group_message?     # grupos: opt-in futuro (F2)
     return if sender_phone.blank? || message_id.blank?
-    return if text_content.blank? && media_url.blank?
 
     set_contact
     return if @contact_inbox.blank?
+
+    return if record_csat_if_rating # resposta do CSAT interativo (pode nao ter texto) -> grava e para
+    return if text_content.blank? && media_url.blank?
 
     set_conversation
     create_message
@@ -82,6 +84,37 @@ class Whatsapp::IncomingMessageUazapiService
     when 'video' then :video
     else :file
     end
+  end
+
+  # ---- CSAT interativo (resposta da lista) ----
+
+  # Id selecionado na lista de CSAT: 'csat_1'..'csat_5'. Defensivo com o shape do
+  # webhook (selectedRowId / listResponse / selectedButtonId / texto cru).
+  def csat_rating
+    id = message_node['selectedRowId'].presence ||
+         message_node.dig('listResponse', 'singleSelectReply', 'selectedRowId') ||
+         message_node.dig('content', 'selectedRowId') ||
+         message_node['selectedButtonId'].presence ||
+         message_node['text'].to_s.strip
+    id.to_s[/\Acsat_([1-5])\z/, 1]&.to_i
+  end
+
+  def record_csat_if_rating
+    rating = csat_rating
+    return false if rating.nil?
+
+    csat_msg = Message.where(conversation_id: @contact_inbox.conversations.select(:id), content_type: :input_csat)
+                      .order(created_at: :desc).first
+    return false if csat_msg.nil?
+
+    csat_msg.update!(content_attributes: csat_msg.content_attributes.merge(
+                       'submitted_values' => { 'csat_survey_response' => { 'rating' => rating } }
+                     ))
+    CsatSurveys::ResponseBuilder.new(message: csat_msg).perform
+    true
+  rescue StandardError => e
+    Rails.logger.warn "[UAZAPI] gravar CSAT falhou: #{e.message}"
+    false
   end
 
   def set_contact

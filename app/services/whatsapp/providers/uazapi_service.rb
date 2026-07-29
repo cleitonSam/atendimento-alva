@@ -13,9 +13,13 @@ class Whatsapp::Providers::UazapiService < Whatsapp::Providers::BaseService
 
   # ---- interface do provider (chamada por Whatsapp::SendOnWhatsappService) ----
 
+  # CSAT interativo: 1-5 com emoji (o cliente toca a nota). Link no rodape = fallback.
+  CSAT_OPTIONS = [%w[😡 Péssimo], %w[😕 Ruim], %w[😐 Regular], %w[🙂 Bom], %w[😍 Ótimo]].freeze
+
   def send_message(phone_number, message)
     @message = message
     return send_pix(phone_number, message) if pix_payload(message).present?
+    return send_csat_interactive(phone_number, message) if message.content_type == 'input_csat'
 
     if message.attachments.present?
       send_attachment_message(phone_number, message)
@@ -205,6 +209,24 @@ class Whatsapp::Providers::UazapiService < Whatsapp::Providers::BaseService
                  post('/send/pix-button', { number: number }.merge(common))
                end
     process_uazapi_response(response, message)
+  end
+
+  # Envia o CSAT como lista interativa (/send/menu type=list): 5 opcoes com id
+  # csat_1..csat_5. O link da pesquisa vai no rodape como fallback garantido.
+  def send_csat_interactive(phone_number, message)
+    survey_link = message.conversation.csat_survey_link
+    choices = CSAT_OPTIONS.each_with_index.map { |(emoji, label), i| "#{emoji} #{label}|csat_#{i + 1}|" }
+    body = {
+      number: phone_number.to_s.gsub(/\D/, ''),
+      type: 'list',
+      text: message.content.presence || I18n.t('conversations.templates.csat_input_message_body'),
+      footerText: "Ou avalie pelo link: #{survey_link}",
+      listButton: 'Avaliar atendimento',
+      choices: choices,
+      track_source: 'chatwoot',
+      async: true
+    }
+    process_uazapi_response(post('/send/menu', body), message)
   end
 
   def uazapi_media_type(file_type)
