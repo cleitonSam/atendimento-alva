@@ -31,6 +31,7 @@ export default {
             permissions: ['administrator'],
             featureFlag: FEATURE_FLAGS.SAML,
             installationTypes: [
+              INSTALLATION_TYPES.COMMUNITY,
               INSTALLATION_TYPES.CLOUD,
               INSTALLATION_TYPES.ENTERPRISE,
             ],

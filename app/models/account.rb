@@ -129,6 +129,12 @@ class Account < ApplicationRecord
     users.where(account_users: { role: :agent })
   end
 
+  # SAML (MIT): true quando a conta tem SAML SSO configurado. Usado pelo
+  # SamlAgentBuilderConcern e pelo e-mail de convite ciente de SAML.
+  def saml_enabled?
+    saml_settings&.saml_enabled? || false
+  end
+
   def administrators
     users.where(account_users: { role: :administrator })
   end

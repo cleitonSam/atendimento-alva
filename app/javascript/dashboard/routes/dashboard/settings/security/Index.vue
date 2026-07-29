@@ -22,7 +22,11 @@ const shouldShowSaml = computed(() => {
   const hasPermission = shouldShow(
     FEATURE_FLAGS.SAML,
     ['administrator'],
-    [INSTALLATION_TYPES.CLOUD, INSTALLATION_TYPES.ENTERPRISE]
+    [
+      INSTALLATION_TYPES.COMMUNITY,
+      INSTALLATION_TYPES.CLOUD,
+      INSTALLATION_TYPES.ENTERPRISE,
+    ]
   );
   return hasPermission && isSamlSsoEnabled.value;
 });
