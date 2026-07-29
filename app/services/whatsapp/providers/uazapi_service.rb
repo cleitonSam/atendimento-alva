@@ -88,11 +88,23 @@ class Whatsapp::Providers::UazapiService < Whatsapp::Providers::BaseService
     { status: extract_status(response), qrcode: response['qrcode'], paircode: response['paircode'] }
   end
 
-  # Estado atual: disconnected | connecting | connected | hibernated.
+  # Estado atual: disconnected | connecting | connected | hibernated. Traz tambem
+  # o motivo da ultima queda (para detectar ban) e o QR se estiver reconectando.
   def connection_status
     response = get('/instance/status') || {}
     status = extract_status(response)
-    { status: status, connected: connected?(response, status), qrcode: response['qrcode'] }
+    {
+      status: status,
+      connected: connected?(response, status),
+      qrcode: response['qrcode'],
+      disconnect_reason: response.dig('instance', 'lastDisconnectReason').presence
+    }
+  end
+
+  # Heuristica de ban/bloqueio a partir do motivo de queda (a UAZAPI nao expoe um
+  # status 'banned' dedicado).
+  def banned?(disconnect_reason)
+    disconnect_reason.to_s.match?(/ban|block|forbidden|403|loggedout|logged_out|conflict/i)
   end
 
   def disconnect

@@ -81,3 +81,10 @@ trigger_slas_for_accounts_job:
   cron: '*/5 * * * *'
   class: 'Sla::TriggerSlasForAccountsJob'
   queue: scheduled_jobs
+
+# executed every 10 minutes
+# health-check das instancias UAZAPI: reconecta e traz QR novo se cair, detecta ban
+uazapi_health_check_job:
+  cron: '*/10 * * * *'
+  class: 'Whatsapp::UazapiHealthCheckJob'
+  queue: scheduled_jobs
