@@ -6,3 +6,15 @@
   font-display: swap;
   src: url('shared/assets/fonts/Bricolage/Bricolage.woff2') format('woff2');
 }
+
+// ALVA IA TECH — títulos usam a display typeface (Bricolage).
+// O Chatwoot não aplica a fonte de destaque nos headings; aqui a marca
+// fica visível nos títulos (o corpo continua em Hanken via font-sans).
+h1,
+h2,
+h3,
+.page-title,
+.text-woot-title {
+  font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
