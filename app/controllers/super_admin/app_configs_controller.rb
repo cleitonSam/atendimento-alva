@@ -50,7 +50,13 @@ class SuperAdmin::AppConfigsController < SuperAdmin::ApplicationController
       'whatsapp_embedded' => %w[WHATSAPP_APP_ID WHATSAPP_APP_SECRET WHATSAPP_CONFIGURATION_ID WHATSAPP_API_VERSION],
       'notion' => %w[NOTION_CLIENT_ID NOTION_CLIENT_SECRET],
       'google' => %w[GOOGLE_OAUTH_CLIENT_ID GOOGLE_OAUTH_CLIENT_SECRET GOOGLE_OAUTH_REDIRECT_URI ENABLE_GOOGLE_OAUTH_LOGIN],
-      'captain' => %w[CAPTAIN_OPEN_AI_API_KEY CAPTAIN_OPEN_AI_MODEL CAPTAIN_OPEN_AI_ENDPOINT]
+      'captain' => %w[CAPTAIN_OPEN_AI_API_KEY CAPTAIN_OPEN_AI_MODEL CAPTAIN_OPEN_AI_ENDPOINT],
+      # Portados do enterprise (deletado) -> MIT: os grupos de config das features
+      # premium destravadas, para a tela de config mostrar os campos certos e nao
+      # cair no fallback generico.
+      'custom_branding' => %w[LOGO_THUMBNAIL LOGO LOGO_DARK BRAND_NAME INSTALLATION_NAME BRAND_URL WIDGET_BRAND_URL TERMS_URL PRIVACY_URL
+                              DISPLAY_MANIFEST],
+      'saml' => %w[ENABLE_SAML_SSO_LOGIN]
     }
 
     @allowed_configs = mapping.fetch(
