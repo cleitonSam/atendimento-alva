@@ -15,6 +15,10 @@ const { t } = useI18n();
 
 const accountId = useMapGetter('getCurrentAccountId');
 
+// Quando o servidor UAZAPI + admin token vêm do ENV (multi-cliente), escondemos
+// esses campos: o admin só informa nome + número.
+const uazapiConfigured = window.chatwootConfig?.uazapiConfigured === true;
+
 // step: 'form' (credenciais) -> 'qr' (escanear) -> 'connected'
 const step = ref('form');
 const creating = ref(false);
@@ -34,8 +38,8 @@ const state = reactive({
 const rules = {
   inboxName: { required },
   phoneNumber: { required, isPhoneE164OrEmpty },
-  apiUrl: { required },
-  adminToken: { required },
+  // URL e admin token só são exigidos quando NÃO vêm do ENV.
+  ...(uazapiConfigured ? {} : { apiUrl: { required }, adminToken: { required } }),
 };
 const v$ = useVuelidate(rules, state);
 
@@ -48,17 +52,18 @@ const createInbox = async () => {
   if (v$.value.$invalid) return;
   creating.value = true;
   try {
+    const providerConfig = { instance_name: state.inboxName.trim() };
+    if (!uazapiConfigured) {
+      providerConfig.api_url = state.apiUrl.trim().replace(/\/+$/, '');
+      providerConfig.admin_token = state.adminToken.trim();
+    }
     const channel = await store.dispatch('inboxes/createChannel', {
       name: state.inboxName.trim(),
       channel: {
         type: 'whatsapp',
         phone_number: state.phoneNumber,
         provider: 'uazapi',
-        provider_config: {
-          api_url: state.apiUrl.trim().replace(/\/+$/, ''),
-          admin_token: state.adminToken.trim(),
-          instance_name: state.inboxName.trim(),
-        },
+        provider_config: providerConfig,
       },
     });
     inboxId.value = channel.id;
@@ -123,7 +128,12 @@ onBeforeUnmount(stopPolling);
 <template>
   <!-- Passo 1: credenciais UAZAPI -->
   <form v-if="step === 'form'" class="flex flex-col gap-4" @submit.prevent="createInbox">
-    <p class="text-sm text-n-slate-11 m-0">
+    <p v-if="uazapiConfigured" class="text-sm text-n-slate-11 m-0">
+      Conecte um número de WhatsApp pela UAZAPI. Informe o <b>nome</b> e o <b>número</b> —
+      o servidor e o token de administrador já estão configurados. O QR aparece no
+      próximo passo.
+    </p>
+    <p v-else class="text-sm text-n-slate-11 m-0">
       Conecte um número de WhatsApp pela UAZAPI. Você precisa da
       <b>URL do seu servidor UAZAPI</b> e do <b>admin token</b> — o token da instância é
       gerado automaticamente e o QR aparece no próximo passo.
@@ -149,25 +159,27 @@ onBeforeUnmount(stopPolling);
       />
     </label>
 
-    <label :class="{ error: v$.apiUrl.$error }">
-      URL do servidor UAZAPI
-      <input
-        v-model="state.apiUrl"
-        type="text"
-        placeholder="https://seuservidor.uazapi.com"
-        @blur="v$.apiUrl.$touch"
-      />
-    </label>
+    <template v-if="!uazapiConfigured">
+      <label :class="{ error: v$.apiUrl.$error }">
+        URL do servidor UAZAPI
+        <input
+          v-model="state.apiUrl"
+          type="text"
+          placeholder="https://seuservidor.uazapi.com"
+          @blur="v$.apiUrl.$touch"
+        />
+      </label>
 
-    <label :class="{ error: v$.adminToken.$error }">
-      Admin token
-      <input
-        v-model="state.adminToken"
-        type="password"
-        placeholder="token de administrador do servidor"
-        @blur="v$.adminToken.$touch"
-      />
-    </label>
+      <label :class="{ error: v$.adminToken.$error }">
+        Admin token
+        <input
+          v-model="state.adminToken"
+          type="password"
+          placeholder="token de administrador do servidor"
+          @blur="v$.adminToken.$touch"
+        />
+      </label>
+    </template>
 
     <div>
       <NextButton
