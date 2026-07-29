@@ -11,6 +11,7 @@ import AttachmentPreview from 'dashboard/components/widgets/AttachmentsPreview.v
 import ReplyTopPanel from 'dashboard/components/widgets/WootWriter/ReplyTopPanel.vue';
 import ReplyEmailHead from './ReplyEmailHead.vue';
 import ReplyBottomPanel from 'dashboard/components/widgets/WootWriter/ReplyBottomPanel.vue';
+import ConversationApi from 'dashboard/api/conversations';
 import CopilotReplyBottomPanel from 'dashboard/components/widgets/WootWriter/CopilotReplyBottomPanel.vue';
 import ArticleSearchPopover from 'dashboard/routes/dashboard/helpcenter/components/ArticleSearch/SearchPopover.vue';
 import CopilotEditorSection from './CopilotEditorSection.vue';
@@ -113,6 +114,7 @@ export default {
   data() {
     return {
       message: '',
+      isSuggestingReply: false,
       inReplyTo: {},
       isFocused: false,
       showEmojiPicker: false,
@@ -547,6 +549,32 @@ export default {
     emitter.off(CMD_AI_ASSIST, this.executeCopilotAction);
   },
   methods: {
+    // Captain-lite: pede uma sugestão de resposta à IA e insere no editor.
+    async onSuggestReply() {
+      if (this.isSuggestingReply) return;
+      this.isSuggestingReply = true;
+      try {
+        const { data } = await ConversationApi.suggestReply(
+          this.currentChat.id
+        );
+        if (data.reply) {
+          this.message = this.message?.trim()
+            ? `${this.message}\n${data.reply}`
+            : data.reply;
+        }
+      } catch (error) {
+        const code = error?.response?.data?.error;
+        useAlert(
+          this.$t(
+            code === 'openai_not_configured'
+              ? 'CONVERSATION.REPLYBOX.AI_SUGGEST_NO_KEY'
+              : 'CONVERSATION.REPLYBOX.AI_SUGGEST_ERROR'
+          )
+        );
+      } finally {
+        this.isSuggestingReply = false;
+      }
+    },
     getDraftKey(
       conversationId = this.conversationIdByRoute,
       replyType = this.replyType
@@ -1434,6 +1462,8 @@ export default {
         :toggle-audio-recorder-play-pause="toggleAudioRecorderPlayPause"
         :toggle-audio-recorder="toggleAudioRecorder"
         :toggle-emoji-picker="toggleEmojiPicker"
+        :on-suggest-reply="onSuggestReply"
+        :is-suggesting-reply="isSuggestingReply"
         :message="message"
         :portal-slug="connectedPortalSlug"
         :new-conversation-modal-active="newConversationModalActive"

@@ -164,6 +164,7 @@ Rails.application.routes.draw do
               resource :draft_messages, only: [:show, :update, :destroy]
             end
             member do
+              post :suggest_reply
               post :mute
               post :unmute
               post :transcript

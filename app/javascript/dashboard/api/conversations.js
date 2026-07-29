@@ -17,6 +17,10 @@ class ConversationApi extends ApiClient {
   getUnreadCounts() {
     return axios.get(`${this.url}/unread_counts`);
   }
+
+  suggestReply(conversationID) {
+    return axios.post(`${this.url}/${conversationID}/suggest_reply`);
+  }
 }
 
 export default new ConversationApi();

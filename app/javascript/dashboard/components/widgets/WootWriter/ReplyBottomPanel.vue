@@ -17,6 +17,14 @@ export default {
   components: { NextButton, FileUpload, VideoCallButton },
   mixins: [inboxMixin],
   props: {
+    onSuggestReply: {
+      type: Function,
+      default: () => {},
+    },
+    isSuggestingReply: {
+      type: Boolean,
+      default: false,
+    },
     isNote: {
       type: Boolean,
       default: false,
@@ -286,6 +294,16 @@ export default {
         faded
         sm
         @click="toggleEmojiPicker"
+      />
+      <NextButton
+        v-if="!isEditorDisabled"
+        v-tooltip.top-end="$t('CONVERSATION.REPLYBOX.AI_SUGGEST')"
+        icon="i-ph-sparkle"
+        slate
+        faded
+        sm
+        :disabled="isSuggestingReply"
+        @click="onSuggestReply"
       />
       <FileUpload
         v-if="showAttachButton"

@@ -69,6 +69,17 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
     head :ok
   end
 
+  # Sugestão de resposta com IA (Captain-lite) — aditivo, código próprio.
+  # Ver ReplySuggestionService (usa a integração OpenAI do Community).
+  def suggest_reply
+    result = ReplySuggestionService.new(conversation: @conversation).perform
+    if result[:reply]
+      render json: { reply: result[:reply] }
+    else
+      render json: { error: result[:error] }, status: :unprocessable_entity
+    end
+  end
+
   def transcript
     render json: { error: 'email param missing' }, status: :unprocessable_entity and return if params[:email].blank?
     return render_payment_required('Email transcript is not available on your plan') unless @conversation.account.email_transcript_enabled?
