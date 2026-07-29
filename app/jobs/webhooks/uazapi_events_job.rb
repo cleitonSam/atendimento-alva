@@ -1,10 +1,15 @@
 # Processa os eventos do webhook UAZAPI: mensagem recebida -> vira conversa no
-# Chatwoot; atualizacao de status (ack) -> marca ✓✓/lido na bolha (premium).
+# Chatwoot; atualizacao de status (messages_update) -> marca ✓✓/lido na bolha.
 class Webhooks::UazapiEventsJob < ApplicationJob
   queue_as :low
 
-  # ack da UAZAPI (Baileys): 1 pending, 2 sent, 3 delivered, 4 read, 5 played
+  # ack numerico (Baileys): 1 pending, 2 sent, 3 delivered, 4 read, 5 played
   ACK_TO_STATUS = { 3 => :delivered, 4 => :read, 5 => :read }.freeze
+  # ou string (v2.1.1 messageStatus)
+  STRING_TO_STATUS = {
+    'DELIVERY_ACK' => :delivered, 'DELIVERED' => :delivered,
+    'READ' => :read, 'PLAYED' => :read
+  }.freeze
   STATUS_RANK = { 'sent' => 1, 'delivered' => 2, 'read' => 3 }.freeze
 
   def perform(params)
@@ -24,26 +29,31 @@ class Webhooks::UazapiEventsJob < ApplicationJob
 
   private
 
-  # E uma atualizacao de status se o evento indica update/ack e NAO traz texto novo.
+  def event_name(params)
+    (params[:EventType] || params[:event] || params[:type]).to_s
+  end
+
+  # Atualizacao de status: evento messages_update, ou o no traz ack/messageStatus
+  # sem conteudo de mensagem novo.
   def status_update?(params)
-    event = (params[:event] || params[:type]).to_s
-    return true if event.match?(/update|ack|status/i)
+    return true if event_name(params).match?(/update|ack|status/i)
 
     node = message_node(params)
-    node.present? && node[:ack].present? && node.dig(:message).blank?
+    node.present? && (node[:ack].present? || node[:messageStatus].present?) &&
+      node[:text].blank? && node[:messageType].blank?
   end
 
   def message_node(params)
     node = params[:message] || params[:data]
     node = params[:messages].first if node.blank? && params[:messages].is_a?(Array)
+    node = params if node.blank? && (params[:messageid] || params[:sender]).present?
     (node || {}).with_indifferent_access
   end
 
   def update_message_status(inbox, params)
     node = message_node(params)
-    source_id = (node.dig(:key, :id) || node[:id] || node[:messageid]).to_s
-    ack = node[:ack] || node[:status]
-    new_status = ACK_TO_STATUS[ack.to_i]
+    source_id = (node[:messageid] || node[:id] || node.dig(:key, :id)).to_s
+    new_status = ACK_TO_STATUS[node[:ack].to_i] || STRING_TO_STATUS[node[:messageStatus].to_s.upcase]
     return if source_id.blank? || new_status.nil?
 
     message = inbox.messages.find_by(source_id: source_id)

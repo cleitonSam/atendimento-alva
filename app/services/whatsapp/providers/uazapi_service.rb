@@ -48,36 +48,38 @@ class Whatsapp::Providers::UazapiService < Whatsapp::Providers::BaseService
 
   # Cria a instancia no servidor (admintoken). Devolve o token da instancia, que
   # passa a ser usado em todas as chamadas por-numero (envio, status, connect).
+  # v2.1.1: endpoint /instance/create; o token vem em 'token' (top-level).
   def create_instance(name)
     body = { name: name.to_s.parameterize.presence || "alva-#{SecureRandom.hex(4)}" }
-    response = admin_post('/instance/init', body) || {}
-    instance = response['instance'] || response
-    { token: instance['token'] || response['token'], name: instance['name'], status: instance['status'], raw: response }
+    response = admin_post('/instance/create', body) || {}
+    instance = response['instance'] || {}
+    { token: response['token'] || instance['token'], name: instance['name'], status: instance['status'], raw: response }
   end
 
   # Aponta a instancia para o nosso webhook receber tudo (mensagens + status).
+  # events validos v2.1.1: connection, messages, messages_update, presence, ...
   def register_webhook(callback_url)
     post('/webhook', {
            url: callback_url,
-           events: %w[messages messages_update connection presence],
+           events: %w[messages messages_update connection],
            enabled: true,
            excludeMessages: %w[wasSentByApi]
          })
   end
 
-  # Inicia a conexao e retorna o QR code (data URL) para parear o numero.
+  # Inicia a conexao e retorna o QR (base64) para parear. Se passar phone, a UAZAPI
+  # devolve paircode (codigo de pareamento) em vez de QR.
   def connect(phone: nil)
     body = phone.present? ? { phone: phone.gsub(/\D/, '') } : {}
-    response = post('/instance/connect', body)
-    instance = response.is_a?(Hash) ? (response['instance'] || response) : {}
-    { status: instance['status'], qrcode: instance['qrcode'] || response['qrcode'] }
+    response = post('/instance/connect', body) || {}
+    { status: extract_status(response), qrcode: response['qrcode'], paircode: response['paircode'] }
   end
 
   # Estado atual: disconnected | connecting | connected | hibernated.
   def connection_status
-    response = get('/instance/status')
-    instance = response.is_a?(Hash) ? (response['instance'] || response) : {}
-    { status: instance['status'], connected: instance['status'] == 'connected', qrcode: instance['qrcode'] }
+    response = get('/instance/status') || {}
+    status = extract_status(response)
+    { status: status, connected: connected?(response, status), qrcode: response['qrcode'] }
   end
 
   def disconnect
@@ -86,11 +88,13 @@ class Whatsapp::Providers::UazapiService < Whatsapp::Providers::BaseService
 
   # ---- acoes de conversa (usadas pelos recursos premium) ----
 
-  def mark_read(message_ids, chat_phone)
-    post('/message/markread', { id: Array(message_ids), number: chat_phone.to_s.gsub(/\D/, '') })
+  # v2.1.1: body {chatid, id}. chatid pode ser o numero ou o jid completo.
+  def mark_read(message_ids, chatid)
+    post('/message/markread', { chatid: chatid.to_s, id: Array(message_ids) })
   end
 
-  def send_typing(phone, state = 'composing')
+  # v2.1.1: presence in typing | recording | paused (nao 'composing').
+  def send_typing(phone, state = 'typing')
     post('/message/presence', { number: phone.to_s.gsub(/\D/, ''), presence: state })
   end
 
@@ -115,6 +119,24 @@ class Whatsapp::Providers::UazapiService < Whatsapp::Providers::BaseService
   end
 
   private
+
+  # ---- status da instancia ----
+
+  # status como string enum: disconnected|connecting|connected|hibernated.
+  def extract_status(response)
+    return nil unless response.is_a?(Hash)
+
+    instance_status = response.dig('instance', 'status')
+    return instance_status if instance_status.present?
+
+    response['status'].is_a?(String) ? response['status'] : nil
+  end
+
+  def connected?(response, status)
+    return true if status == 'connected'
+
+    response.is_a?(Hash) && response.dig('status', 'connected') == true
+  end
 
   # ---- envio ----
 
