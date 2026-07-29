@@ -36,4 +36,4 @@ class PortalPolicy < ApplicationPolicy
   end
 end
 
-PortalPolicy.prepend_mod_with('PortalPolicy')
+PortalPolicy.prepend(CustomRoleEnforcement::PortalPolicy)

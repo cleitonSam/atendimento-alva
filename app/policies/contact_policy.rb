@@ -52,4 +52,4 @@ class ContactPolicy < ApplicationPolicy
   end
 end
 
-ContactPolicy.prepend_mod_with('ContactPolicy')
+ContactPolicy.prepend(CustomRoleEnforcement::ContactPolicy)

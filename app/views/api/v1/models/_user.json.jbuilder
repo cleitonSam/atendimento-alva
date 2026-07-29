@@ -32,6 +32,9 @@ json.accounts do
     json.availability_status account_user.availability_status
     json.auto_offline account_user.auto_offline
     json.api_and_webhooks account_user.account.feature_enabled?('api_and_webhooks')
-    json.partial! 'api/v1/models/account_user', account_user: account_user if ChatwootApp.enterprise?
+    # Cargo personalizado (MIT): o frontend usa custom_role_id para detectar o modo
+    # e custom_role.permissions para o gating de rotas/menus.
+    json.custom_role_id account_user.custom_role_id
+    json.custom_role account_user.custom_role&.as_json(only: [:id, :name, :description, :permissions])
   end
 end

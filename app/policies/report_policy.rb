@@ -4,4 +4,4 @@ class ReportPolicy < ApplicationPolicy
   end
 end
 
-ReportPolicy.prepend_mod_with('ReportPolicy')
+ReportPolicy.prepend(CustomRoleEnforcement::ReportPolicy)

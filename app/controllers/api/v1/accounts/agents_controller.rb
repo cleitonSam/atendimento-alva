@@ -18,6 +18,7 @@ class Api::V1::Accounts::AgentsController < Api::V1::Accounts::BaseController
     )
 
     @agent = builder.perform
+    associate_agent_with_custom_role if @agent.present?
   rescue AgentBuilder::LimitExceededError => e
     render_payment_required(e.message)
   end
@@ -25,6 +26,7 @@ class Api::V1::Accounts::AgentsController < Api::V1::Accounts::BaseController
   def update
     @agent.update!(agent_params.slice(:name).compact)
     @agent.current_account_user.update!(agent_params.slice(*account_user_attributes).compact)
+    associate_agent_with_custom_role
   end
 
   def destroy
@@ -57,6 +59,19 @@ class Api::V1::Accounts::AgentsController < Api::V1::Accounts::BaseController
 
   def account_user_attributes
     [:role, :availability, :auto_offline]
+  end
+
+  # Cargo personalizado (MIT): grava o custom_role vindo do formulario de agente
+  # (payload achatado -> params[:custom_role_id]). So age quando a chave e enviada,
+  # para nao limpar o cargo em updates que nao a incluem. Escopa por conta
+  # (find -> 404 se o id nao for desta conta), bloqueando atribuir cargo de outro
+  # tenant; valor vazio limpa o cargo. Endpoint ja e admin-only (check_authorization).
+  def associate_agent_with_custom_role
+    return unless params.key?(:custom_role_id)
+
+    role_id = params[:custom_role_id].presence
+    custom_role = role_id ? Current.account.custom_roles.find(role_id) : nil
+    @agent.current_account_user.update!(custom_role: custom_role)
   end
 
   def allowed_agent_params

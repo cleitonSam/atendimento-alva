@@ -44,4 +44,4 @@ class ConversationPolicy < ApplicationPolicy
   end
 end
 
-ConversationPolicy.prepend_mod_with('ConversationPolicy')
+ConversationPolicy.prepend(CustomRoleEnforcement::ConversationPolicy)

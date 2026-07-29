@@ -28,4 +28,4 @@ class CategoryPolicy < ApplicationPolicy
   end
 end
 
-CategoryPolicy.prepend_mod_with('CategoryPolicy')
+CategoryPolicy.prepend(CustomRoleEnforcement::CategoryPolicy)

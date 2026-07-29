@@ -41,6 +41,13 @@ class ApplicationPolicy
     Pundit.policy_scope!(user_context, record.class)
   end
 
+  # Cargos personalizados (MIT): true quando o agente tem um custom_role cujo
+  # array de permissões inclui a permissão pedida. Usado pelos módulos de
+  # enforcement em CustomRoleEnforcement::*.
+  def custom_role_permits?(permission)
+    account_user&.custom_role&.permissions&.include?(permission) || false
+  end
+
   class Scope
     attr_reader :user_context, :user, :scope, :account, :account_user
 

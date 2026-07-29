@@ -58,6 +58,11 @@ class AccountUser < ApplicationRecord
   end
 
   def permissions
+    # Cargo personalizado (MIT): quando presente, as permissões efetivas são as
+    # do custom_role + o marcador 'custom_role' (consumido pelo frontend para
+    # detectar o modo de cargo personalizado). Senao, o papel padrao.
+    return custom_role.permissions + ['custom_role'] if custom_role.present?
+
     administrator? ? ['administrator'] : ['agent']
   end
 
