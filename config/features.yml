@@ -209,8 +209,8 @@
   premium: true
 - name: saml
   display_name: SAML
-  enabled: false
-  premium: true
+  enabled: true
+  premium: false
 - name: advanced_search_indexing
   display_name: Advanced Search Indexing
   enabled: false
