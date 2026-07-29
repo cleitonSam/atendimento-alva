@@ -13,11 +13,13 @@ import SmtpSettings from '../SmtpSettings.vue';
 import { useVuelidate } from '@vuelidate/core';
 import { required } from '@vuelidate/validators';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import UazapiReconnect from './components/UazapiReconnect.vue';
 import TextArea from 'next/textarea/TextArea.vue';
 import { sanitizeAllowedDomains } from 'dashboard/helper/URLHelper';
 
 export default {
   components: {
+    UazapiReconnect,
     SettingsFieldSection,
     SettingsToggleSection,
     SettingsAccordion,
@@ -391,6 +393,7 @@ export default {
     <SmtpSettings v-if="inbox.imap_enabled" :inbox="inbox" />
   </div>
   <div v-else-if="isAWhatsAppChannel && !isATwilioChannel">
+    <UazapiReconnect v-if="inbox.provider === 'uazapi'" :inbox="inbox" />
     <div v-if="inbox.provider_config">
       <!-- Embedded Signup Section -->
       <template v-if="isEmbeddedSignupWhatsApp">
