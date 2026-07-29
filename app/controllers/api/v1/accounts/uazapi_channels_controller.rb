@@ -10,6 +10,7 @@ class Api::V1::Accounts::UazapiChannelsController < Api::V1::Accounts::BaseContr
   def setup
     provision_instance_if_needed
     register_webhook
+    apply_anti_ban_delay
     result = provider.connect
     render json: { status: result[:status], qrcode: result[:qrcode] }
   rescue StandardError => e
@@ -59,5 +60,12 @@ class Api::V1::Accounts::UazapiChannelsController < Api::V1::Accounts::BaseContr
     provider.register_webhook("#{base}/webhooks/uazapi/#{@channel.phone_number}")
   rescue StandardError => e
     Rails.logger.warn "[UAZAPI] register_webhook falhou: #{e.message}"
+  end
+
+  # Delay padrao de envio (3-6s) no servidor — reduz risco de ban desde o inicio.
+  def apply_anti_ban_delay
+    provider.update_delay_settings(3, 6)
+  rescue StandardError => e
+    Rails.logger.warn "[UAZAPI] update_delay_settings falhou: #{e.message}"
   end
 end

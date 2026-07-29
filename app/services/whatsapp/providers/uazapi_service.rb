@@ -15,6 +15,8 @@ class Whatsapp::Providers::UazapiService < Whatsapp::Providers::BaseService
 
   def send_message(phone_number, message)
     @message = message
+    return send_pix(phone_number, message) if pix_payload(message).present?
+
     if message.attachments.present?
       send_attachment_message(phone_number, message)
     else
@@ -86,6 +88,11 @@ class Whatsapp::Providers::UazapiService < Whatsapp::Providers::BaseService
     post('/instance/disconnect', {})
   end
 
+  # Delay global (em segundos) entre envios no servidor — pacing anti-ban.
+  def update_delay_settings(min_seconds, max_seconds)
+    post('/instance/updateDelaySettings', { msg_delay_min: min_seconds.to_i, msg_delay_max: max_seconds.to_i })
+  end
+
   # ---- acoes de conversa (usadas pelos recursos premium) ----
 
   # v2.1.1: body {chatid, id}. chatid pode ser o numero ou o jid completo.
@@ -144,7 +151,8 @@ class Whatsapp::Providers::UazapiService < Whatsapp::Providers::BaseService
     body = {
       number: phone_number.to_s.gsub(/\D/, ''),
       text: message.outgoing_content.to_s,
-      track_source: 'chatwoot'
+      track_source: 'chatwoot',
+      async: true # enfileira no servidor (pacing anti-ban com o delay global)
     }
     reply_id = message.content_attributes&.dig('in_reply_to_external_id')
     body[:replyid] = reply_id if reply_id.present?
@@ -159,9 +167,37 @@ class Whatsapp::Providers::UazapiService < Whatsapp::Providers::BaseService
       type: uazapi_media_type(attachment.file_type),
       file: attachment.download_url,
       text: message.outgoing_content.to_s,
-      track_source: 'chatwoot'
+      track_source: 'chatwoot',
+      async: true
     }
     process_uazapi_response(post('/send/media', body), message)
+  end
+
+  # Marcador que transforma uma mensagem em PIX/cobranca (em content_attributes,
+  # sem precisar de content_type novo). Setado pela UI/automacao/API.
+  def pix_payload(message)
+    message.content_attributes&.dig('uazapi_pix')
+  end
+
+  # PIX/cobranca. request-payment (cartao com valor) se houver amount; senao botao PIX.
+  def send_pix(phone_number, message)
+    attrs = pix_payload(message).to_h.with_indifferent_access
+    number = phone_number.to_s.gsub(/\D/, '')
+    common = {
+      pixKey: attrs[:pix_key], pixType: (attrs[:pix_type].presence || 'EVP'), pixName: attrs[:pix_name],
+      track_source: 'chatwoot', async: true
+    }
+    response = if attrs[:amount].present?
+                 post('/send/request-payment', {
+                        number: number, amount: attrs[:amount].to_f,
+                        title: attrs[:title].presence || 'Pagamento',
+                        text: message.outgoing_content.to_s, itemName: attrs[:item_name],
+                        invoiceNumber: attrs[:invoice_number]
+                      }.merge(common))
+               else
+                 post('/send/pix-button', { number: number }.merge(common))
+               end
+    process_uazapi_response(response, message)
   end
 
   def uazapi_media_type(file_type)
