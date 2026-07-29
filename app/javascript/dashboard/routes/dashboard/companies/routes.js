@@ -7,7 +7,11 @@ import { INSTALLATION_TYPES } from 'dashboard/constants/installationTypes';
 const commonMeta = {
   featureFlag: FEATURE_FLAGS.COMPANIES,
   permissions: ['administrator', 'agent'],
-  installationTypes: [INSTALLATION_TYPES.CLOUD, INSTALLATION_TYPES.ENTERPRISE],
+  installationTypes: [
+    INSTALLATION_TYPES.COMMUNITY,
+    INSTALLATION_TYPES.CLOUD,
+    INSTALLATION_TYPES.ENTERPRISE,
+  ],
 };
 
 export const routes = [

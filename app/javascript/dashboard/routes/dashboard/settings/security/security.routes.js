@@ -11,6 +11,7 @@ export default {
       meta: {
         permissions: ['administrator'],
         installationTypes: [
+          INSTALLATION_TYPES.COMMUNITY,
           INSTALLATION_TYPES.CLOUD,
           INSTALLATION_TYPES.ENTERPRISE,
         ],

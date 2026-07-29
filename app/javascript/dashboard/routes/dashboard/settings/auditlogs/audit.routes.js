@@ -23,6 +23,7 @@ export default {
           meta: {
             featureFlag: FEATURE_FLAGS.AUDIT_LOGS,
             installationTypes: [
+              INSTALLATION_TYPES.COMMUNITY,
               INSTALLATION_TYPES.CLOUD,
               INSTALLATION_TYPES.ENTERPRISE,
             ],
