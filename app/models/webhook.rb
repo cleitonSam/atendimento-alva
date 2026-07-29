@@ -20,6 +20,7 @@
 
 class Webhook < ApplicationRecord
   belongs_to :account
+  audited associated_with: :account, on: [:create, :update]
   belongs_to :inbox, optional: true
 
   include WebhookSecretable

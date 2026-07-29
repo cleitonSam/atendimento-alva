@@ -22,6 +22,7 @@ class AutomationRule < ApplicationRecord
   include Reauthorizable
 
   belongs_to :account
+  audited associated_with: :account, on: [:create, :update]
   has_many_attached :files
 
   validate :json_conditions_format

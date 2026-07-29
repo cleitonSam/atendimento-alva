@@ -28,6 +28,7 @@ class AccountUser < ApplicationRecord
   include AvailabilityStatusable
 
   belongs_to :account
+  audited associated_with: :account, on: [:create, :update]
   belongs_to :user
   belongs_to :inviter, class_name: 'User', optional: true
   belongs_to :custom_role, optional: true

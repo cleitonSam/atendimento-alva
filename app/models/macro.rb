@@ -20,6 +20,7 @@ class Macro < ApplicationRecord
   include Rails.application.routes.url_helpers
 
   belongs_to :account
+  audited associated_with: :account, on: [:create, :update]
   belongs_to :created_by,
              class_name: :User, optional: true, inverse_of: :macros
   belongs_to :updated_by,

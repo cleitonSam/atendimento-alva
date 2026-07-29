@@ -21,6 +21,7 @@ class Team < ApplicationRecord
   include AccountCacheRevalidator
 
   belongs_to :account
+  audited associated_with: :account, on: [:create, :update]
   has_many :team_members, dependent: :destroy_async
   has_many :members, through: :team_members, source: :user
   has_many :conversations, dependent: :nullify

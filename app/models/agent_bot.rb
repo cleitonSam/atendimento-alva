@@ -38,6 +38,7 @@ class AgentBot < ApplicationRecord
                                     dependent: :nullify,
                                     inverse_of: :assignee_agent_bot
   belongs_to :account, optional: true
+  audited associated_with: :account, on: [:create, :update]
   enum bot_type: { webhook: 0 }
 
   validates :outgoing_url, length: { maximum: Limits::URL_LENGTH_LIMIT }
