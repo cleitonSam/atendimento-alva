@@ -61,9 +61,11 @@ class Account < ApplicationRecord
   store_accessor :settings, :captain_auto_resolve_mode, :captain_false_promise_harness_enabled
   include AccountCaptainAutoResolve
 
-  # Portado do enterprise -> nosso (CE puro): Companies, Custom Roles e Audit.
+  # Portado do enterprise -> nosso (CE puro): Companies, Custom Roles, SLA e Audit.
   has_many :companies, dependent: :destroy_async
   has_many :custom_roles, dependent: :destroy_async
+  has_many :sla_policies, dependent: :destroy_async
+  has_many :applied_slas, dependent: :destroy_async
   audited except: :updated_at, on: [:update]
   has_associated_audits
 

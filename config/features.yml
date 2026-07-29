@@ -129,8 +129,8 @@
   chatwoot_internal: true
 - name: sla
   display_name: SLA
-  enabled: false
-  premium: true
+  enabled: true
+  premium: false
   help_url: https://chwt.app/hc/sla
 - name: help_center_embedding_search
   display_name: Help Center Embedding Search

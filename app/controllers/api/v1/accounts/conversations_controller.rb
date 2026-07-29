@@ -151,7 +151,9 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
 
   def permitted_update_params
     # TODO: Move the other conversation attributes to this method and remove specific endpoints for each attribute
-    params.permit(:priority)
+    # sla_policy_id (MIT): permite atribuir/limpar o SLA da conversa; a validação e a
+    # criação do AppliedSla são cobertas pelo SlaConversationConcern.
+    params.permit(:priority, :sla_policy_id)
   end
 
   def attachment_params

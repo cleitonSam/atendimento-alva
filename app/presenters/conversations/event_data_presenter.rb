@@ -18,7 +18,7 @@ class Conversations::EventDataPresenter < SimpleDelegator
       priority: priority,
       waiting_since: waiting_since.to_i,
       **push_timestamps
-    }
+    }.merge(sla_push_data)
   end
 
   # Like #push_data but with message text normalized for external integrations (webhooks).
@@ -30,6 +30,19 @@ class Conversations::EventDataPresenter < SimpleDelegator
   end
 
   private
+
+  # SLA (MIT): leva o SLA aplicado/eventos nos eventos de push (ActionCable/webhook),
+  # para o front atualizar o card em tempo real. Antes vivia no overlay enterprise.
+  def sla_push_data
+    return {} unless account.feature_enabled?('sla')
+
+    applicable = sla_applicable?
+    {
+      applied_sla: applicable ? applied_sla&.push_event_data : nil,
+      sla_events: applicable ? sla_events.map(&:push_event_data) : [],
+      sla_policy_id: applicable ? sla_policy_id : nil
+    }
+  end
 
   def push_messages
     [messages.where(account_id: account_id).chat.last&.push_event_data].compact

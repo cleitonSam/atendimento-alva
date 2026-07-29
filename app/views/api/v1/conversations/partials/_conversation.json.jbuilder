@@ -60,4 +60,21 @@ json.priority conversation.priority
 json.waiting_since conversation.waiting_since.to_i.to_i
 sla_applicable = !conversation.respond_to?(:sla_applicable?) || conversation.sla_applicable?
 json.sla_policy_id sla_applicable ? conversation.sla_policy_id : nil
-json.partial! 'enterprise/api/v1/conversations/partials/conversation', conversation: conversation if ChatwootApp.enterprise?
+
+# SLA (MIT): serializa o SLA aplicado e os eventos de quebra direto no payload
+# da conversa (antes vivia no overlay enterprise, deletado).
+if conversation.account.feature_enabled?('sla')
+  if sla_applicable
+    json.applied_sla do
+      json.partial! 'api/v1/models/applied_sla', formats: [:json], resource: conversation.applied_sla if conversation.applied_sla.present?
+    end
+    json.sla_events do
+      json.array! conversation.sla_events do |sla_event|
+        json.partial! 'api/v1/models/sla_event', formats: [:json], sla_event: sla_event
+      end
+    end
+  else
+    json.applied_sla nil
+    json.sla_events []
+  end
+end

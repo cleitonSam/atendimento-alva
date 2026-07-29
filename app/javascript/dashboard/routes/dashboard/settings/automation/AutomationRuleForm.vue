@@ -1,7 +1,6 @@
 <script setup>
 import { ref, computed, h, useTemplateRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useAccount } from 'dashboard/composables/useAccount';
 import { useOperators } from 'dashboard/components-next/filter/operators';
 import ConditionRow from 'dashboard/components-next/filter/ConditionRow.vue';
 import AutomationActionInput from 'dashboard/components/widgets/AutomationActionInput.vue';
@@ -72,7 +71,6 @@ const INPUT_TYPE_MAP = {
 };
 
 const { t } = useI18n();
-const { isCloudFeatureEnabled } = useAccount();
 const { operators } = useOperators();
 
 const dialogRef = ref(null);
@@ -166,11 +164,8 @@ const hasAutomationMutated = computed(() => {
 });
 
 const automationActionTypes = computed(() => {
-  const actionTypes = isCloudFeatureEnabled('sla')
-    ? AUTOMATION_ACTION_TYPES
-    : AUTOMATION_ACTION_TYPES.filter(({ key }) => key !== 'add_sla');
-
-  return actionTypes.map(action => ({
+  // SLA e recurso padrao neste build MIT (nao cloud): add_sla sempre disponivel.
+  return AUTOMATION_ACTION_TYPES.map(action => ({
     ...action,
     label: t(`AUTOMATION.ACTIONS.${action.label}`),
   }));
