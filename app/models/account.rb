@@ -66,6 +66,7 @@ class Account < ApplicationRecord
   has_many :custom_roles, dependent: :destroy_async
   has_many :sla_policies, dependent: :destroy_async
   has_many :applied_slas, dependent: :destroy_async
+  has_one :saml_settings, class_name: 'AccountSamlSettings', dependent: :destroy_async
   audited except: :updated_at, on: [:update]
   has_associated_audits
 

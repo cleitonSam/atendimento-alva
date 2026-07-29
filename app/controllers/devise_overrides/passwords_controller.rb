@@ -41,4 +41,4 @@ class DeviseOverrides::PasswordsController < Devise::PasswordsController
   end
 end
 
-DeviseOverrides::PasswordsController.prepend_mod_with('DeviseOverrides::PasswordsController')
+DeviseOverrides::PasswordsController.prepend(SamlPasswordConcern)
