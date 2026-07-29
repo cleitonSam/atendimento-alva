@@ -16,7 +16,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_24_000100) do
   enable_extension "pg_trgm"
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
-  enable_extension "vector"
 
   create_table "access_tokens", force: :cascade do |t|
     t.string "owner_type"
@@ -187,10 +186,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_24_000100) do
   create_table "article_embeddings", force: :cascade do |t|
     t.bigint "article_id", null: false
     t.text "term", null: false
-    t.vector "embedding", limit: 1536
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["embedding"], name: "index_article_embeddings_on_embedding", using: :ivfflat
   end
 
   create_table "articles", force: :cascade do |t|
@@ -351,7 +348,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_24_000100) do
   create_table "captain_assistant_responses", force: :cascade do |t|
     t.string "question", null: false
     t.text "answer", null: false
-    t.vector "embedding", limit: 1536
     t.bigint "assistant_id", null: false
     t.bigint "documentable_id"
     t.bigint "account_id", null: false
@@ -363,7 +359,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_24_000100) do
     t.index ["account_id"], name: "index_captain_assistant_responses_on_account_id"
     t.index ["assistant_id"], name: "index_captain_assistant_responses_on_assistant_id"
     t.index ["documentable_id", "documentable_type"], name: "idx_cap_asst_resp_on_documentable"
-    t.index ["embedding"], name: "vector_idx_knowledge_entries_embedding", using: :ivfflat
     t.index ["status"], name: "index_captain_assistant_responses_on_status"
   end
 
@@ -438,7 +433,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_24_000100) do
   create_table "captain_faq_suggestions", force: :cascade do |t|
     t.string "question", null: false
     t.text "answer", null: false
-    t.vector "embedding", limit: 1536
     t.bigint "assistant_id", null: false
     t.bigint "account_id", null: false
     t.string "language", default: "en", null: false
@@ -449,7 +443,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_24_000100) do
     t.index ["account_id"], name: "index_captain_faq_suggestions_on_account_id"
     t.index ["account_id", "assistant_id", "status", "language"], name: "idx_cap_faq_suggestions_on_account_assistant_status_language"
     t.index ["assistant_id"], name: "index_captain_faq_suggestions_on_assistant_id"
-    t.index ["embedding"], name: "vector_idx_captain_faq_suggestions_embedding", opclass: :vector_cosine_ops, using: :ivfflat
   end
 
   create_table "captain_inboxes", force: :cascade do |t|
