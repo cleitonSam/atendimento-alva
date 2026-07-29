@@ -4,7 +4,7 @@
 # o usePolicy.shouldShow escondia os menus (Audit Logs, SLA, Custom Roles, Companies,
 # Security/SAML). Idempotente — reabilitar um feature já ligado é no-op.
 class EnableRebuiltFeaturesForExistingAccounts < ActiveRecord::Migration[7.1]
-  FEATURES = %w[audit_logs sla custom_roles companies disable_branding saml].freeze
+  FEATURES = %w[audit_logs sla custom_roles companies disable_branding saml advanced_assignment].freeze
 
   def up
     Account.find_each do |account|

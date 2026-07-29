@@ -246,8 +246,8 @@
   premium: true
 - name: advanced_assignment
   display_name: Advanced Assignment
-  enabled: false
-  premium: true
+  enabled: true
+  premium: false
 - name: whatsapp_manual_transfer
   display_name: WhatsApp Manual Transfer
   enabled: false

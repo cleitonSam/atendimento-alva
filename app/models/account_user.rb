@@ -32,6 +32,7 @@ class AccountUser < ApplicationRecord
   belongs_to :user
   belongs_to :inviter, class_name: 'User', optional: true
   belongs_to :custom_role, optional: true
+  belongs_to :agent_capacity_policy, optional: true
 
   enum role: { agent: 0, administrator: 1 }
   enum availability: { online: 0, offline: 1, busy: 2 }
