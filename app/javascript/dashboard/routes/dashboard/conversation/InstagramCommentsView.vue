@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useMapGetter } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
-import { shortTimestamp } from 'shared/helpers/timeHelper';
+import { shortTimestamp, dynamicTime } from 'shared/helpers/timeHelper';
 import InstagramCommentedPostsAPI from 'dashboard/api/instagramCommentedPosts';
 import ConversationAPI from 'dashboard/api/inbox/conversation';
 import InstagramPostCard from './InstagramPostCard.vue';
@@ -284,7 +284,9 @@ watch(
                       }}
                     </span>
                     <span class="text-xs text-n-slate-10">
-                      {{ shortTimestamp(comment.created_at, true) }}
+                      {{
+                        shortTimestamp(dynamicTime(comment.created_at), true)
+                      }}
                     </span>
                   </div>
                   <p class="text-sm break-words text-n-slate-12">
@@ -364,7 +366,9 @@ watch(
                           }}
                         </span>
                         <span class="text-xs text-n-slate-10">
-                          {{ shortTimestamp(reply.created_at, true) }}
+                          {{
+                            shortTimestamp(dynamicTime(reply.created_at), true)
+                          }}
                         </span>
                       </div>
                       <p class="text-sm break-words text-n-slate-12">

@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { shortTimestamp } from 'shared/helpers/timeHelper';
+import { shortTimestamp, dynamicTime } from 'shared/helpers/timeHelper';
 
 defineProps({
   post: { type: Object, required: true },
@@ -52,7 +52,7 @@ const imageFailed = ref(false);
           }}
         </span>
         <span v-if="post.last_comment_at">
-          {{ shortTimestamp(post.last_comment_at, true) }}
+          {{ shortTimestamp(dynamicTime(post.last_comment_at), true) }}
         </span>
       </div>
     </div>
