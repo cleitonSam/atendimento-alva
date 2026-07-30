@@ -62,6 +62,7 @@ class Api::V1::Accounts::InstagramCommentedPostsController < Api::V1::Accounts::
   def comment_messages
     @comment_messages ||= Message
                           .where(conversation_id: comment_conversation_ids)
+                          .where(deleted: false)
                           .includes(:sender, conversation: { inbox: :channel })
                           .to_a
                           .select { |message| message.content_attributes['is_instagram_comment'] }

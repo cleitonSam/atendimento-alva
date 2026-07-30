@@ -46,6 +46,14 @@ class ConversationApi extends ApiClient {
     });
   }
 
+  // Modera um comentario no Instagram: moderation = 'delete' | 'hide' | 'unhide'.
+  moderateInstagramComment(conversationId, { commentId, moderation }) {
+    return axios.post(
+      `${this.url}/${conversationId}/instagram_comment_moderation`,
+      { comment_id: commentId, moderation }
+    );
+  }
+
   filter(payload) {
     return axios.post(`${this.url}/filter`, payload.queryData, {
       params: {

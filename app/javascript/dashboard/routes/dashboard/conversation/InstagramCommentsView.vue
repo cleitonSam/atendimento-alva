@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useMapGetter } from 'dashboard/composables/store';
@@ -125,6 +125,55 @@ async function sendReply(comment) {
     useAlert(t('INSTAGRAM_COMMENTS.REPLY_ERROR'));
   } finally {
     sendingReply.value = false;
+  }
+}
+
+// ---- Moderacao (excluir / ocultar / exibir) ----
+const hiddenIds = reactive(new Set());
+const busyIds = reactive(new Set());
+
+async function toggleHide(comment) {
+  const isHidden = hiddenIds.has(comment.comment_id);
+  busyIds.add(comment.comment_id);
+  try {
+    await ConversationAPI.moderateInstagramComment(comment.conversation_id, {
+      commentId: comment.comment_id,
+      moderation: isHidden ? 'unhide' : 'hide',
+    });
+    if (isHidden) hiddenIds.delete(comment.comment_id);
+    else hiddenIds.add(comment.comment_id);
+    useAlert(
+      t(
+        isHidden
+          ? 'INSTAGRAM_COMMENTS.UNHIDDEN_OK'
+          : 'INSTAGRAM_COMMENTS.HIDDEN_OK'
+      )
+    );
+  } catch (error) {
+    useAlert(t('INSTAGRAM_COMMENTS.MODERATION_ERROR'));
+  } finally {
+    busyIds.delete(comment.comment_id);
+  }
+}
+
+async function removeComment(comment) {
+  // eslint-disable-next-line no-alert
+  if (!window.confirm(t('INSTAGRAM_COMMENTS.DELETE_CONFIRM'))) return;
+  busyIds.add(comment.comment_id);
+  try {
+    await ConversationAPI.moderateInstagramComment(comment.conversation_id, {
+      commentId: comment.comment_id,
+      moderation: 'delete',
+    });
+    comments.value = comments.value.filter(
+      item =>
+        item.comment_id !== comment.comment_id &&
+        item.parent_id !== comment.comment_id
+    );
+    useAlert(t('INSTAGRAM_COMMENTS.DELETED_OK'));
+  } catch (error) {
+    useAlert(t('INSTAGRAM_COMMENTS.MODERATION_ERROR'));
+    busyIds.delete(comment.comment_id);
   }
 }
 
@@ -292,13 +341,41 @@ watch(
                   <p class="text-sm break-words text-n-slate-12">
                     {{ comment.text }}
                   </p>
-                  <button
-                    type="button"
-                    class="mt-1 text-xs font-medium text-n-brand hover:underline w-fit"
-                    @click="startReply(comment)"
-                  >
-                    {{ t('INSTAGRAM_COMMENTS.REPLY') }}
-                  </button>
+                  <div class="flex items-center gap-3 mt-1">
+                    <button
+                      type="button"
+                      class="text-xs font-medium text-n-brand hover:underline"
+                      @click="startReply(comment)"
+                    >
+                      {{ t('INSTAGRAM_COMMENTS.REPLY') }}
+                    </button>
+                    <button
+                      type="button"
+                      :disabled="busyIds.has(comment.comment_id)"
+                      class="text-xs font-medium text-n-slate-11 hover:text-n-slate-12 disabled:opacity-50"
+                      @click="toggleHide(comment)"
+                    >
+                      {{
+                        hiddenIds.has(comment.comment_id)
+                          ? t('INSTAGRAM_COMMENTS.UNHIDE')
+                          : t('INSTAGRAM_COMMENTS.HIDE')
+                      }}
+                    </button>
+                    <button
+                      type="button"
+                      :disabled="busyIds.has(comment.comment_id)"
+                      class="text-xs font-medium text-n-ruby-9 hover:text-n-ruby-10 disabled:opacity-50"
+                      @click="removeComment(comment)"
+                    >
+                      {{ t('INSTAGRAM_COMMENTS.DELETE') }}
+                    </button>
+                    <span
+                      v-if="hiddenIds.has(comment.comment_id)"
+                      class="px-1.5 py-0.5 text-[10px] font-medium rounded bg-n-alpha-2 text-n-slate-11"
+                    >
+                      {{ t('INSTAGRAM_COMMENTS.HIDDEN_BADGE') }}
+                    </span>
+                  </div>
 
                   <!-- Compositor de resposta -->
                   <div
