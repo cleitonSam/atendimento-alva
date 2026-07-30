@@ -435,10 +435,28 @@ function openContextMenu(e) {
   if (e.type === 'contextmenu') {
     useTrack(ACCOUNT_EVENTS.OPEN_MESSAGE_CONTEXT_MENU);
   }
-  contextMenuPosition.value = {
-    x: e.pageX || e.clientX,
-    y: e.pageY || e.clientY,
-  };
+
+  // Abre o menu AO LADO da bolha (no espaço livre), nunca por cima do texto: no
+  // clique-direito a mensagem à esquerda abre o menu à direita e vice-versa, pra
+  // dar pra ler a mensagem enquanto o menu está aberto. (A largura aproximada é
+  // suficiente; o ContextMenu ainda ajusta pra não sair da tela.)
+  const bubbleRect =
+    e.type === 'contextmenu' ? e.currentTarget?.getBoundingClientRect?.() : null;
+  if (bubbleRect) {
+    const APPROX_MENU_WIDTH = 240;
+    const openToLeft = orientation.value === ORIENTATION.RIGHT;
+    contextMenuPosition.value = {
+      x: openToLeft
+        ? Math.max(0, bubbleRect.left - APPROX_MENU_WIDTH - 4)
+        : bubbleRect.right + 4,
+      y: bubbleRect.top,
+    };
+  } else {
+    contextMenuPosition.value = {
+      x: e.pageX || e.clientX,
+      y: e.pageY || e.clientY,
+    };
+  }
   showContextMenu.value = true;
 }
 
