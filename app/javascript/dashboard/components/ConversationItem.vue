@@ -122,8 +122,17 @@ const onExpandedSelect = checked => {
 const openContextMenu = e => {
   e.preventDefault();
   toggleContextMenu(true);
-  contextMenu.value.x = e.pageX || e.clientX;
-  contextMenu.value.y = e.pageY || e.clientY;
+  // Ancora o menu na BORDA DIREITA do card (a lista fica sempre a esquerda),
+  // pra ele abrir no espaco livre e nunca cobrir o texto da conversa.
+  // Fallback pro cursor caso nao consiga medir o card.
+  const cardRect = e.currentTarget?.getBoundingClientRect?.();
+  if (cardRect) {
+    contextMenu.value.x = cardRect.right + 4;
+    contextMenu.value.y = cardRect.top;
+  } else {
+    contextMenu.value.x = e.pageX || e.clientX;
+    contextMenu.value.y = e.pageY || e.clientY;
+  }
   showContextMenu.value = true;
 };
 
