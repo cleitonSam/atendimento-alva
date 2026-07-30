@@ -40,12 +40,39 @@ class Webhooks::InstagramEventsJob < MutexApplicationJob
   private
 
   def process_single_entry(entry)
+    if instagram_comment_event?(entry)
+      process_comments(entry)
+      return
+    end
+
     if test_event?(entry)
       process_test_event(entry)
       return
     end
 
     process_messages(entry)
+  end
+
+  # Comentario de post (field=comments/live_comments) — separado do DM. So conta se
+  # tiver um comentario de verdade (value.id); o botao "Testar" da Meta usa id "0".
+  def instagram_comment_event?(entry)
+    Array(entry[:changes]).any? do |change|
+      %w[comments live_comments].include?(change[:field].to_s) && change.dig(:value, :id).present?
+    end
+  end
+
+  def process_comments(entry)
+    channel = find_channel(entry[:id])
+    return if channel.blank?
+
+    Array(entry[:changes]).each do |change|
+      next unless %w[comments live_comments].include?(change[:field].to_s)
+
+      value = change[:value]
+      next if value.blank? || value[:id].blank?
+
+      ::Instagram::CommentBuilder.new(value, channel).perform
+    end
   end
 
   def process_messages(entry)
