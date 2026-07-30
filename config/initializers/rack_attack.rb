@@ -54,6 +54,14 @@ class Rack::Attack
     req.path == '/health'
   end
 
+  # Safelist the UAZAPI webhook: throttling NEVER pode derrubar uma mensagem de
+  # cliente que chega. Abuso é barrado pelo token de verificação por-caixa
+  # (Webhooks::UazapiController#valid_token?) — sem token o request leva 401 antes
+  # de enfileirar qualquer job. Volume, portanto, não descarta mensagem.
+  Rack::Attack.safelist('uazapi webhook') do |req|
+    req.path.start_with?('/webhooks/uazapi/')
+  end
+
   ### Throttle Spammy Clients ###
 
   # If any single client IP is making tons of requests, then they're

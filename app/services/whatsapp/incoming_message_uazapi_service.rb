@@ -109,6 +109,8 @@ class Whatsapp::IncomingMessageUazapiService
     csat_msg = Message.where(conversation_id: @contact_inbox.conversations.select(:id), content_type: :input_csat)
                       .order(created_at: :desc).first
     return false if csat_msg.nil?
+    # Idempotente/anti-replay: nao sobrescreve uma nota ja registrada.
+    return true if csat_msg.content_attributes.dig('submitted_values', 'csat_survey_response', 'rating').present?
 
     csat_msg.update!(content_attributes: csat_msg.content_attributes.merge(
                        'submitted_values' => { 'csat_survey_response' => { 'rating' => rating } }

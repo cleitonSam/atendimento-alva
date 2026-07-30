@@ -16,6 +16,7 @@ class AudioTranscriptionService
 
   def perform
     return unless transcribable?
+    return unless AiUsageLimiter.allow?(account&.id, 'transcription')
 
     text = request_transcription
     return if text.blank?

@@ -11,6 +11,11 @@ module SamlAgentBuilderConcern
   private
 
   def convert_to_saml_provider(user)
-    user.update!(provider: 'saml') unless user.provider == 'saml'
+    return if user.provider == 'saml'
+    # provider é GLOBAL no User: não forçar SAML se o usuário também pertence a OUTRA
+    # conta — senão quebraria o login dela (efeito colateral cross-account).
+    return if user.account_users.where.not(account_id: account.id).exists?
+
+    user.update!(provider: 'saml')
   end
 end
