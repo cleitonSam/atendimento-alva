@@ -151,5 +151,7 @@ WORKDIR /app
 
 EXPOSE 3000
 
-# WEB: migra (idempotente) e sobe o servidor. O worker sobrescreve com sidekiq.
-CMD ["sh", "-c", "bundle exec rails db:chatwoot_prepare && bundle exec rails s -p 3000 -b 0.0.0.0"]
+# Papel definido por env RAILS_ROLE (padrao = web):
+#   RAILS_ROLE=worker -> sobe o Sidekiq (NAO migra; evita ConcurrentMigrationError)
+#   qualquer outro     -> migra (idempotente) e sobe o servidor web (Puma)
+CMD ["sh", "-c", "if [ \"$RAILS_ROLE\" = \"worker\" ]; then exec bundle exec sidekiq -C config/sidekiq.yml; else bundle exec rails db:chatwoot_prepare && exec bundle exec rails s -p 3000 -b 0.0.0.0; fi"]
