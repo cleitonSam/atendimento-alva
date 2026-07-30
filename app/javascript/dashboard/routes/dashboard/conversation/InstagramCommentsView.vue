@@ -317,15 +317,9 @@ watch(
               class="p-3 border rounded-xl border-n-weak bg-n-solid-1"
             >
               <div class="flex gap-3">
-                <img
-                  v-if="comment.author?.thumbnail"
-                  :src="comment.author.thumbnail"
-                  :alt="comment.author?.name"
-                  class="flex-shrink-0 object-cover rounded-full size-8"
-                  @error="comment.author.thumbnail = null"
-                />
+                <!-- Iniciais em vez de carregar o avatar (a representacao do ActiveStorage
+                     da 500 quando o storage nao e compartilhado web/worker) -->
                 <span
-                  v-else
                   class="flex items-center justify-center flex-shrink-0 text-xs font-semibold rounded-full size-8 bg-n-alpha-2 text-n-slate-11"
                 >
                   {{ initials(comment.author?.name) }}
