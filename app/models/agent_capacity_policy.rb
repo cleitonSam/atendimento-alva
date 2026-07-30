@@ -10,6 +10,10 @@
 #  updated_at      :datetime         not null
 #  account_id      :bigint           not null
 #
+# Indexes
+#
+#  index_agent_capacity_policies_on_account_id  (account_id)
+#
 
 # Política de capacidade de agente: limita quantas conversas abertas cada agente
 # recebe por auto-atribuição, por inbox. Reconstruído em MIT.

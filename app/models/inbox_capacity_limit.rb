@@ -9,6 +9,12 @@
 #  agent_capacity_policy_id :bigint           not null
 #  inbox_id                 :bigint           not null
 #
+# Indexes
+#
+#  idx_on_agent_capacity_policy_id_inbox_id_71c7ec4caf      (agent_capacity_policy_id,inbox_id) UNIQUE
+#  index_inbox_capacity_limits_on_agent_capacity_policy_id  (agent_capacity_policy_id)
+#  index_inbox_capacity_limits_on_inbox_id                  (inbox_id)
+#
 
 # Limite de conversas abertas por inbox dentro de uma política de capacidade.
 # Reconstruído em MIT.
