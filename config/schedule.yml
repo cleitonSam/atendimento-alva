@@ -88,3 +88,9 @@ uazapi_health_check_job:
   cron: '*/10 * * * *'
   class: 'Whatsapp::UazapiHealthCheckJob'
   queue: scheduled_jobs
+
+# diario 03:30 — minera conversas resolvidas e propoe FAQs (Captain FAQ Suggestions)
+captain_faq_mining_job:
+  cron: '30 3 * * *'
+  class: 'Captain::FaqSuggestionsMiningJob'
+  queue: scheduled_jobs
