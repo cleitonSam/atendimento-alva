@@ -132,6 +132,11 @@ async function sendReply(comment) {
 const hiddenIds = reactive(new Set());
 const busyIds = reactive(new Set());
 
+// Mostra o motivo real do Meta (ex.: "10 - requires instagram_manage_comments")
+// quando o backend devolve, senao a mensagem generica.
+const moderationError = error =>
+  error?.response?.data?.error || t('INSTAGRAM_COMMENTS.MODERATION_ERROR');
+
 async function toggleHide(comment) {
   const isHidden = hiddenIds.has(comment.comment_id);
   busyIds.add(comment.comment_id);
@@ -150,7 +155,7 @@ async function toggleHide(comment) {
       )
     );
   } catch (error) {
-    useAlert(t('INSTAGRAM_COMMENTS.MODERATION_ERROR'));
+    useAlert(moderationError(error));
   } finally {
     busyIds.delete(comment.comment_id);
   }
@@ -172,7 +177,7 @@ async function removeComment(comment) {
     );
     useAlert(t('INSTAGRAM_COMMENTS.DELETED_OK'));
   } catch (error) {
-    useAlert(t('INSTAGRAM_COMMENTS.MODERATION_ERROR'));
+    useAlert(moderationError(error));
     busyIds.delete(comment.comment_id);
   }
 }

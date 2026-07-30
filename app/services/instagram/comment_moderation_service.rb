@@ -37,7 +37,7 @@ class Instagram::CommentModerationService
     else
       log_failure('delete', response)
     end
-    { ok: response.success?, code: response.code }
+    result_for(response)
   end
 
   def apply_hidden(hidden)
@@ -47,7 +47,23 @@ class Instagram::CommentModerationService
     else
       log_failure(hidden ? 'hide' : 'unhide', response)
     end
-    { ok: response.success?, code: response.code }
+    result_for(response)
+  end
+
+  def result_for(response)
+    return { ok: true, code: response.code } if response.success?
+
+    { ok: false, code: response.code, error: graph_error(response) }
+  end
+
+  # Mensagem legivel do erro da Graph (ex.: "10 - ... requires instagram_manage_comments").
+  def graph_error(response)
+    parsed = response.parsed_response
+    parsed = {} unless parsed.is_a?(Hash)
+    [parsed.dig('error', 'code'), parsed.dig('error', 'message')].compact.join(' - ').presence ||
+      "HTTP #{response.code}"
+  rescue StandardError
+    "HTTP #{response.code}"
   end
 
   # Marca a mensagem do comentario como deletada (soft), pra sumir da tela e da contagem.
