@@ -1,3 +1,6 @@
+require 'resolv'
+require 'ipaddr'
+
 # Transforma o webhook da UAZAPI (v2.1.1) em contato + conversa + mensagem no
 # Chatwoot. Aditivo, proprio (nao herda o base da Meta). Trata TEXTO e MIDIA
 # (imagem/video/audio/documento/figurinha), transcreve audio recebido e enriquece
@@ -163,11 +166,42 @@ class Whatsapp::IncomingMessageUazapiService
     )
   end
 
+  PRIVATE_IP_RANGES = [
+    IPAddr.new('0.0.0.0/8'), IPAddr.new('10.0.0.0/8'), IPAddr.new('127.0.0.0/8'),
+    IPAddr.new('169.254.0.0/16'), IPAddr.new('172.16.0.0/12'), IPAddr.new('192.168.0.0/16'),
+    IPAddr.new('::1/128'), IPAddr.new('fc00::/7'), IPAddr.new('fe80::/10')
+  ].freeze
+
+  # Baixa a midia com trava anti-SSRF: so http(s), host que NAO resolva para IP
+  # privado/loopback/link-local (bloqueia 169.254.169.254, 127/10/172.16/192.168...),
+  # com timeout e teto de tamanho (anti-DoS). A URL vem de payload de webhook.
   def download_media
-    Down.download(media_url, headers: download_headers, max_size: 100 * 1024 * 1024)
+    return unless safe_remote_url?(media_url)
+
+    Down.download(media_url, headers: download_headers, max_size: 25 * 1024 * 1024,
+                            open_timeout: 5, read_timeout: 20)
   rescue StandardError => e
     Rails.logger.warn "[UAZAPI] download de midia falhou (#{media_url}): #{e.message}"
     nil
+  end
+
+  def safe_remote_url?(url)
+    uri = URI.parse(url.to_s)
+    return false unless %w[http https].include?(uri.scheme) && uri.host.present?
+
+    addresses = Resolv.getaddresses(uri.host)
+    return false if addresses.empty?
+
+    addresses.none? { |addr| private_ip?(addr) }
+  rescue StandardError
+    false
+  end
+
+  def private_ip?(addr)
+    ip = IPAddr.new(addr)
+    PRIVATE_IP_RANGES.any? { |range| range.include?(ip) }
+  rescue StandardError
+    true # nao parseou -> trata como inseguro
   end
 
   # A fileURL da UAZAPI costuma exigir o token da instancia.

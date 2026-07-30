@@ -138,7 +138,8 @@ class Channel::Whatsapp < ApplicationRecord
   private
 
   def ensure_webhook_verify_token
-    provider_config['webhook_verify_token'] ||= SecureRandom.hex(16) if provider == 'whatsapp_cloud'
+    # whatsapp_cloud (Meta) e uazapi (nao-oficial) usam token de verificacao do webhook.
+    provider_config['webhook_verify_token'] ||= SecureRandom.hex(16) if %w[whatsapp_cloud uazapi].include?(provider)
   end
 
   def validate_provider_config

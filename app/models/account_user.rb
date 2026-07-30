@@ -46,6 +46,10 @@ class AccountUser < ApplicationRecord
   after_update_commit :invalidate_filtered_unread_count_visibility_update, if: :filtered_unread_count_visibility_changed?
 
   validates :user_id, uniqueness: { scope: :account_id }
+  # Defesa em profundidade (fail-closed): o cargo personalizado tem de ser da MESMA
+  # conta do vinculo — impede que qualquer writer (API, SAML, console) atribua um
+  # custom_role de outra conta (isolamento de autorizacao cross-tenant).
+  validate :custom_role_belongs_to_same_account
 
   def create_notification_setting
     setting = user.notification_settings.new(account_id: account.id)
@@ -77,6 +81,13 @@ class AccountUser < ApplicationRecord
   end
 
   private
+
+  def custom_role_belongs_to_same_account
+    return if custom_role.blank? || account_id.blank?
+    return if custom_role.account_id == account_id
+
+    errors.add(:custom_role, 'must belong to the same account')
+  end
 
   def notify_creation
     Rails.configuration.dispatcher.dispatch(AGENT_ADDED, Time.zone.now, account: account)

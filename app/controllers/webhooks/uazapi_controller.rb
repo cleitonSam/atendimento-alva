@@ -13,11 +13,13 @@ class Webhooks::UazapiController < ActionController::API
 
   private
 
+  # Fail-closed: sem token configurado -> NEGA. O token vai na URL do webhook
+  # (query ?token=) registrada na UAZAPI, ou no header X-Webhook-Token.
   def valid_token?(channel)
     expected = channel.provider_config['webhook_verify_token'].presence
-    return true if expected.blank? # sem token configurado -> aceita (compat)
+    return false if expected.blank?
 
     provided = request.headers['X-Webhook-Token'].presence || params[:token].presence
-    ActiveSupport::SecurityUtils.secure_compare(provided.to_s, expected.to_s) if provided.present?
+    provided.present? && ActiveSupport::SecurityUtils.secure_compare(provided.to_s, expected.to_s)
   end
 end

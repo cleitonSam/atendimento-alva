@@ -55,9 +55,14 @@ class Api::V1::Accounts::UazapiChannelsController < Api::V1::Accounts::BaseContr
     @channel.update!(provider_config: @channel.provider_config.merge('api_token' => result[:token]))
   end
 
+  # Registra a URL do webhook COM o token de verificacao (query ?token=), pra
+  # UAZAPI devolver o token e o controller aceitar (fail-closed).
   def register_webhook
     base = ENV.fetch('FRONTEND_URL', nil).presence || request.base_url
-    provider.register_webhook("#{base}/webhooks/uazapi/#{@channel.phone_number}")
+    token = @channel.provider_config['webhook_verify_token'].presence
+    url = "#{base}/webhooks/uazapi/#{@channel.phone_number}"
+    url = "#{url}?token=#{token}" if token.present?
+    provider.register_webhook(url)
   rescue StandardError => e
     Rails.logger.warn "[UAZAPI] register_webhook falhou: #{e.message}"
   end

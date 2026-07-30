@@ -16,6 +16,9 @@ class Whatsapp::Providers::UazapiService < Whatsapp::Providers::BaseService
   # CSAT interativo: 1-5 com emoji (o cliente toca a nota). Link no rodape = fallback.
   CSAT_OPTIONS = [%w[😡 Péssimo], %w[😕 Ruim], %w[😐 Regular], %w[🙂 Bom], %w[😍 Ótimo]].freeze
 
+  # Tipos validos de chave PIX (v2.1.1). Dinheiro: validar antes de enviar.
+  PIX_TYPES = %w[CPF CNPJ PHONE EMAIL EVP].freeze
+
   def send_message(phone_number, message)
     @message = message
     return send_pix(phone_number, message) if pix_payload(message).present?
@@ -203,16 +206,23 @@ class Whatsapp::Providers::UazapiService < Whatsapp::Providers::BaseService
   end
 
   # PIX/cobranca. request-payment (cartao com valor) se houver amount; senao botao PIX.
+  # Dinheiro: valida o tipo da chave (enum) e o valor (> 0) antes de enviar.
   def send_pix(phone_number, message)
     attrs = pix_payload(message).to_h.with_indifferent_access
     number = phone_number.to_s.gsub(/\D/, '')
+    pix_type = (attrs[:pix_type].presence || 'EVP').to_s.upcase
+    return handle_uazapi_error({ 'error' => "PIX: pixType invalido (#{pix_type})" }, message) unless PIX_TYPES.include?(pix_type)
+
+    amount = attrs[:amount].present? ? attrs[:amount].to_f : nil
+    return handle_uazapi_error({ 'error' => 'PIX: valor invalido (precisa ser > 0)' }, message) if amount && amount <= 0
+
     common = {
-      pixKey: attrs[:pix_key], pixType: (attrs[:pix_type].presence || 'EVP'), pixName: attrs[:pix_name],
+      pixKey: attrs[:pix_key], pixType: pix_type, pixName: attrs[:pix_name],
       track_source: 'chatwoot', async: true
     }
-    response = if attrs[:amount].present?
+    response = if amount
                  post('/send/request-payment', {
-                        number: number, amount: attrs[:amount].to_f,
+                        number: number, amount: amount,
                         title: attrs[:title].presence || 'Pagamento',
                         text: message.outgoing_content.to_s, itemName: attrs[:item_name],
                         invoiceNumber: attrs[:invoice_number]
@@ -275,8 +285,11 @@ class Whatsapp::Providers::UazapiService < Whatsapp::Providers::BaseService
     url.sub(%r{/instance/.*\z}, '')
   end
 
+  # Servidor e admin token sao infra da plataforma (multi-cliente): SEMPRE do ENV,
+  # NUNCA do provider_config. Fecha SSRF/exfiltracao — um admin de conta nao aponta
+  # o api_url pro servidor dele para roubar o UAZAPI_ADMIN_TOKEN global.
   def api_url
-    whatsapp_channel.provider_config['api_url'].presence || ENV.fetch('UAZAPI_URL', nil)
+    ENV.fetch('UAZAPI_URL', nil)
   end
 
   def api_token
@@ -284,7 +297,7 @@ class Whatsapp::Providers::UazapiService < Whatsapp::Providers::BaseService
   end
 
   def admin_token
-    whatsapp_channel.provider_config['admin_token'].presence || ENV.fetch('UAZAPI_ADMIN_TOKEN', nil)
+    ENV.fetch('UAZAPI_ADMIN_TOKEN', nil)
   end
 
   def admin_headers
