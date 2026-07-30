@@ -32,8 +32,8 @@ export const isOnUnattendedView = ({ route: { name: routeName } }) => {
 
 export const isOnInstagramCommentView = ({ route: { name: routeName } }) => {
   const INSTAGRAM_COMMENT_ROUTES = [
-    'conversation_instagram_comment',
-    'conversation_through_instagram_comment',
+    'instagram_comments_dashboard',
+    'instagram_comments_post',
   ];
   return INSTAGRAM_COMMENT_ROUTES.includes(routeName);
 };

@@ -36,6 +36,16 @@ class ConversationApi extends ApiClient {
     return axios.get(`${this.url}/${conversationId}/instagram_commented_post`);
   }
 
+  // Responde um comentario reusando o contrato da Alva: publico (public_reply) e/ou
+  // comment-to-DM (dm_reply) — a presenca de cada campo decide o que roda.
+  replyToInstagramComment(conversationId, { commentId, publicReply, dmReply }) {
+    return axios.post(`${this.url}/${conversationId}/instagram_comment_reply`, {
+      comment_id: commentId,
+      public_reply: publicReply,
+      dm_reply: dmReply,
+    });
+  }
+
   filter(payload) {
     return axios.post(`${this.url}/filter`, payload.queryData, {
       params: {

@@ -1,4 +1,26 @@
 {
+  "INSTAGRAM_COMMENTS": {
+    "TITLE": "Comments",
+    "POST": "Post",
+    "NO_CAPTION": "No caption",
+    "COMMENT_COUNT": "{count} comment(s)",
+    "EMPTY": "No Instagram comments yet. When someone comments on your posts, they show up here grouped by post.",
+    "LOAD_ERROR": "Couldn't load the comments. Please try again.",
+    "BACK": "Back to posts",
+    "VIEW_ON_INSTAGRAM": "View on Instagram →",
+    "REPLY": "Reply",
+    "REPLY_PLACEHOLDER": "Write a reply…",
+    "CANCEL": "Cancel",
+    "SEND": "Send",
+    "REPLY_SENT": "Reply sent.",
+    "REPLY_ERROR": "Couldn't send the reply. Please try again.",
+    "UNKNOWN": "Unknown",
+    "MODE": {
+      "PUBLICO": "Public",
+      "DM": "DM",
+      "AMBOS": "Both"
+    }
+  },
   "CONVERSATION": {
     "SELECT_A_CONVERSATION": "Please select a conversation from left pane",
     "CSAT_REPLY_MESSAGE": "Please rate the conversation",

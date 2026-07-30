@@ -52,6 +52,17 @@ class Avatar::AvatarFromUrlJob < ApplicationJob
       filename: avatar_file.original_filename,
       content_type: avatar_file.content_type
     )
+    ensure_processable_avatar!(avatarable)
+  end
+
+  # Alguns profile_pic do Instagram (progressivo/CMYK/truncado) o libvips nao processa;
+  # ao servir a variacao 250px isso viraria HTTP 500 (avatar_url nao tem rescue). Forcamos
+  # o processamento aqui e, se falhar, descartamos o anexo pra cair no fallback de iniciais.
+  def ensure_processable_avatar!(avatarable)
+    avatarable.avatar.representation(resize_to_fill: [250, nil]).processed
+  rescue StandardError => e
+    Rails.logger.warn "AvatarFromUrlJob: avatar nao processavel, descartando (#{e.class}: #{e.message})"
+    avatarable.avatar.purge
   end
 
   def log_http_error(avatar_url, error)

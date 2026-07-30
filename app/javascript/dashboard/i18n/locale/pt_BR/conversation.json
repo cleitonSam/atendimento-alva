@@ -1,4 +1,26 @@
 {
+  "INSTAGRAM_COMMENTS": {
+    "TITLE": "Comentários",
+    "POST": "Publicação",
+    "NO_CAPTION": "Sem legenda",
+    "COMMENT_COUNT": "{count} comentário(s)",
+    "EMPTY": "Ainda não há comentários do Instagram. Quando alguém comentar nas suas publicações, eles aparecem aqui agrupados por post.",
+    "LOAD_ERROR": "Não foi possível carregar os comentários. Tente de novo.",
+    "BACK": "Voltar aos posts",
+    "VIEW_ON_INSTAGRAM": "Ver no Instagram →",
+    "REPLY": "Responder",
+    "REPLY_PLACEHOLDER": "Escreva uma resposta…",
+    "CANCEL": "Cancelar",
+    "SEND": "Enviar",
+    "REPLY_SENT": "Resposta enviada.",
+    "REPLY_ERROR": "Não foi possível enviar a resposta. Tente de novo.",
+    "UNKNOWN": "Desconhecido",
+    "MODE": {
+      "PUBLICO": "Público",
+      "DM": "DM",
+      "AMBOS": "Ambos"
+    }
+  },
   "CONVERSATION": {
     "SELECT_A_CONVERSATION": "Por favor, selecione uma conversa no painel da esquerda",
     "CSAT_REPLY_MESSAGE": "Por favor, classifique a conversa",

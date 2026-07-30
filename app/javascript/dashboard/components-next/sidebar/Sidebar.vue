@@ -10,6 +10,7 @@ import { useI18n } from 'vue-i18n';
 import { useSidebarKeyboardShortcuts } from './useSidebarKeyboardShortcuts';
 import { vOnClickOutside } from '@vueuse/components';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
+import { INBOX_TYPES } from 'dashboard/helper/inbox';
 import { useWindowSize, useEventListener } from '@vueuse/core';
 
 import Button from 'dashboard/components-next/button/Button.vue';
@@ -211,6 +212,10 @@ useEventListener(document, 'touchmove', onResizeMove, { passive: false });
 useEventListener(document, 'touchend', onResizeEnd);
 
 const inboxes = useMapGetter('inboxes/getInboxes');
+// Folha "Comentarios" so aparece quando ha um canal Instagram conectado.
+const hasInstagramChannel = computed(() =>
+  inboxes.value.some(inbox => inbox.channel_type === INBOX_TYPES.INSTAGRAM)
+);
 const labels = useMapGetter('labels/getLabelsOnSidebar');
 const allUnreadCount = useMapGetter(
   'conversationUnreadCounts/getAllUnreadCount'
@@ -414,13 +419,20 @@ const menuItems = computed(() => {
             : 0,
           to: accountScopedRoute('conversation_unattended'),
         },
-        {
-          name: 'InstagramComments',
-          activeOn: ['conversation_through_instagram_comment'],
-          label: t('SIDEBAR.INSTAGRAM_COMMENTS'),
-          icon: 'i-lucide-message-square-text',
-          to: accountScopedRoute('conversation_instagram_comment'),
-        },
+        ...(hasInstagramChannel.value
+          ? [
+              {
+                name: 'InstagramComments',
+                activeOn: [
+                  'instagram_comments_dashboard',
+                  'instagram_comments_post',
+                ],
+                label: t('SIDEBAR.INSTAGRAM_COMMENTS'),
+                icon: 'i-lucide-message-square-text',
+                to: accountScopedRoute('instagram_comments_dashboard'),
+              },
+            ]
+          : []),
         {
           name: 'Folders',
           label: t('SIDEBAR.CUSTOM_VIEWS_FOLDER'),

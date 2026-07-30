@@ -2,6 +2,7 @@
 import { frontendURL } from '../../../helper/URLHelper';
 import store from '../../../store';
 import ConversationView from './ConversationView.vue';
+import InstagramCommentsView from './InstagramCommentsView.vue';
 
 const CONVERSATION_PERMISSIONS = [
   'administrator',
@@ -234,27 +235,23 @@ export default {
       }),
     },
     {
-      path: frontendURL('accounts/:accountId/comments/conversations'),
-      name: 'conversation_instagram_comment',
+      // Tela dedicada (galeria de posts), NAO monta ConversationView — assim o clique
+      // nunca gera /conversations/:id nem cai na secao "Conversas".
+      path: frontendURL('accounts/:accountId/comments'),
+      name: 'instagram_comments_dashboard',
       meta: {
         permissions: CONVERSATION_PERMISSIONS,
       },
-      component: ConversationView,
-      props: () => ({ conversationType: 'instagram_comment' }),
+      component: InstagramCommentsView,
     },
     {
-      path: frontendURL(
-        'accounts/:accountId/comments/conversations/:conversationId'
-      ),
-      name: 'conversation_through_instagram_comment',
+      path: frontendURL('accounts/:accountId/comments/posts/:mediaId'),
+      name: 'instagram_comments_post',
       meta: {
         permissions: CONVERSATION_PERMISSIONS,
       },
-      component: ConversationView,
-      props: route => ({
-        conversationId: route.params.conversationId,
-        conversationType: 'instagram_comment',
-      }),
+      component: InstagramCommentsView,
+      props: route => ({ mediaId: route.params.mediaId }),
     },
   ],
 };
