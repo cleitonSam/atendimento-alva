@@ -60,12 +60,13 @@ class Api::V1::Accounts::InstagramCommentedPostsController < Api::V1::Accounts::
   # roda em Ruby (o model desserializa content_attributes); a lista ja e limitada ao volume
   # de comentarios (conversas type=instagram_comment), fora as atividades de resposta.
   def comment_messages
+    # 'deleted' e accessor dentro de content_attributes (store), NAO coluna — filtrar em
+    # Ruby (nao da pra .where(deleted:); o content_attributes ainda e json double-encoded).
     @comment_messages ||= Message
                           .where(conversation_id: comment_conversation_ids)
-                          .where(deleted: false)
                           .includes(:sender, conversation: { inbox: :channel })
                           .to_a
-                          .select { |message| message.content_attributes['is_instagram_comment'] }
+                          .select { |message| message.content_attributes['is_instagram_comment'] && !message.deleted }
   end
 
   def comment_conversation_ids
