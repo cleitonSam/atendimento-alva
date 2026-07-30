@@ -9,6 +9,7 @@ import {
   isOnParticipatingView,
   isOnUnattendedView,
   isOnFoldersView,
+  isOnInstagramCommentView,
 } from './helpers/actionHelpers';
 import messageReadActions from './actions/messageReadActions';
 import messageTranslateActions from './actions/messageTranslateActions';
@@ -386,8 +387,22 @@ const actions = {
     const hasAppliedFilters = !!appliedFilters.length;
     const isMatchingInboxFilter =
       !currentInbox || Number(currentInbox) === inboxId;
+    const isInstagramComment =
+      conversation.additional_attributes?.type === 'instagram_comment';
+
+    // Comentário do Instagram vive só na aba "Comentários": entra ao vivo nela e
+    // nunca aparece nas listas normais (e vice-versa) — nada se mistura.
+    if (isOnInstagramCommentView(rootState)) {
+      if (!hasAppliedFilters && isInstagramComment && isMatchingInboxFilter) {
+        commit(types.ADD_CONVERSATION, conversation);
+        dispatch('contacts/setContact', sender);
+      }
+      return;
+    }
+
     if (
       !hasAppliedFilters &&
+      !isInstagramComment &&
       !isOnFoldersView(rootState) &&
       !isOnMentionsView(rootState) &&
       !isOnParticipatingView(rootState) &&

@@ -7,6 +7,7 @@ import { useSnakeCase } from 'dashboard/composables/useTransformKeys';
 
 // components
 import ReplyBox from './ReplyBox.vue';
+import InstagramCommentedPost from './InstagramCommentedPost.vue';
 import MessageList from 'next/message/MessageList.vue';
 import ConversationLabelSuggestion from './conversation/LabelSuggestion.vue';
 import Banner from 'dashboard/components/ui/Banner.vue';
@@ -42,6 +43,7 @@ export default {
     MessageList,
     ReplyBox,
     Banner,
+    InstagramCommentedPost,
     ConversationLabelSuggestion,
     Spinner,
     ResizableEditorWrapper,
@@ -466,6 +468,10 @@ export default {
         color-scheme="alert"
         class="mx-2 mt-2 overflow-hidden rounded-lg"
         :banner-message="$t('CONVERSATION.OLD_INSTAGRAM_INBOX_REPLY_BANNER')"
+      />
+      <InstagramCommentedPost
+        v-if="currentChat.additional_attributes?.type === 'instagram_comment'"
+        :conversation-id="currentChat.id"
       />
     </div>
     <MessageList

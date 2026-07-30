@@ -260,7 +260,14 @@ export const mutations = {
       }
     } else {
       const { conversationType } = _state.conversationFilters || {};
-      const { MENTION, PARTICIPATING } = wootConstants.CONVERSATION_TYPE;
+      const { MENTION, PARTICIPATING, INSTAGRAM_COMMENT } =
+        wootConstants.CONVERSATION_TYPE;
+      const isComment =
+        conversation.additional_attributes?.type === 'instagram_comment';
+      // comentário só entra na aba de comentário; a aba de comentário só recebe comentário.
+      if (isComment !== (conversationType === INSTAGRAM_COMMENT)) {
+        return;
+      }
       if (![MENTION, PARTICIPATING].includes(conversationType)) {
         _state.allConversations.push(conversation);
       }

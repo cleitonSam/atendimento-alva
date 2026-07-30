@@ -415,6 +415,13 @@ const menuItems = computed(() => {
           to: accountScopedRoute('conversation_unattended'),
         },
         {
+          name: 'InstagramComments',
+          activeOn: ['conversation_through_instagram_comment'],
+          label: t('SIDEBAR.INSTAGRAM_COMMENTS'),
+          icon: 'i-lucide-message-square-text',
+          to: accountScopedRoute('conversation_instagram_comment'),
+        },
+        {
           name: 'Folders',
           label: t('SIDEBAR.CUSTOM_VIEWS_FOLDER'),
           icon: 'i-lucide-folder',

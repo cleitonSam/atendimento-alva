@@ -32,6 +32,10 @@ class ConversationApi extends ApiClient {
     });
   }
 
+  getInstagramCommentedPost(conversationId) {
+    return axios.get(`${this.url}/${conversationId}/instagram_commented_post`);
+  }
+
   filter(payload) {
     return axios.post(`${this.url}/filter`, payload.queryData, {
       params: {

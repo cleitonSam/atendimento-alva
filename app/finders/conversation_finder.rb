@@ -121,7 +121,15 @@ class ConversationFinder
       current_account
     ).perform
     filter_by_conversation_type if params[:conversation_type]
+    # Comentarios do Instagram vivem na aba propria; nao poluem as demais views.
+    exclude_instagram_comments unless params[:conversation_type] == 'instagram_comment'
     @conversations
+  end
+
+  # IS DISTINCT FROM (nao where.not): em conversa normal a chave 'type' e NULL, e
+  # NOT(NULL = 'x') seria NULL/falsy -> sumiria com TODAS as conversas.
+  def exclude_instagram_comments
+    @conversations = @conversations.where("conversations.additional_attributes ->> 'type' IS DISTINCT FROM ?", 'instagram_comment')
   end
 
   def filter_by_assignee_type
@@ -145,6 +153,8 @@ class ConversationFinder
       @conversations = current_user.participating_conversations.where(account_id: current_account.id)
     when 'unattended'
       @conversations = @conversations.unattended
+    when 'instagram_comment'
+      @conversations = @conversations.where("conversations.additional_attributes ->> 'type' = ?", 'instagram_comment')
     end
     @conversations
   end

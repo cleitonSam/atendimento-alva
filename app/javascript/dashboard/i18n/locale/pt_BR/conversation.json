@@ -46,6 +46,10 @@
     "OLD_INSTAGRAM_INBOX_REPLY_BANNER": "Esta conta do Instagram foi migrada para a nova caixa de entrada do canal do Instagram. Todas as novas mensagens serão mostradas lá. Você não poderá mais enviar mensagens desta conversa.",
     "INSTAGRAM_RESTRICTION_BANNER": "O Instagram está com restrições no momento. Algumas mensagens ou ações podem sofrer atrasos ou/e ficar indisponíveis enquanto restauramos o funcionamento completo.",
     "INSTAGRAM_RESTRICTION_STATUS_LINK": "Ver atualização de status",
+    "INSTAGRAM_COMMENTED_POST": {
+      "HEADING": "Post comentado",
+      "VIEW": "Ver no Instagram →"
+    },
     "REPLYING_TO": "Você está respondendo a:",
     "REMOVE_SELECTION": "Remover seleção",
     "DOWNLOAD": "Baixar",

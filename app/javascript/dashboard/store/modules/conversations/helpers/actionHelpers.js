@@ -30,6 +30,14 @@ export const isOnUnattendedView = ({ route: { name: routeName } }) => {
   return UNATTENDED_ROUTES.includes(routeName);
 };
 
+export const isOnInstagramCommentView = ({ route: { name: routeName } }) => {
+  const INSTAGRAM_COMMENT_ROUTES = [
+    'conversation_instagram_comment',
+    'conversation_through_instagram_comment',
+  ];
+  return INSTAGRAM_COMMENT_ROUTES.includes(routeName);
+};
+
 export const isOnParticipatingView = ({ route: { name: routeName } }) => {
   const PARTICIPATING_ROUTES = [
     'conversation_participating',

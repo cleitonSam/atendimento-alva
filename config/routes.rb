@@ -163,6 +163,7 @@ Rails.application.routes.draw do
               resource :direct_uploads, only: [:create]
               resource :draft_messages, only: [:show, :update, :destroy]
               resource :instagram_comment_reply, only: [:create]
+              resource :instagram_commented_post, only: [:show]
             end
             member do
               post :suggest_reply

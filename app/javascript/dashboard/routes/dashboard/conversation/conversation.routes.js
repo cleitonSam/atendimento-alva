@@ -233,5 +233,28 @@ export default {
         conversationType: 'participating',
       }),
     },
+    {
+      path: frontendURL('accounts/:accountId/comments/conversations'),
+      name: 'conversation_instagram_comment',
+      meta: {
+        permissions: CONVERSATION_PERMISSIONS,
+      },
+      component: ConversationView,
+      props: () => ({ conversationType: 'instagram_comment' }),
+    },
+    {
+      path: frontendURL(
+        'accounts/:accountId/comments/conversations/:conversationId'
+      ),
+      name: 'conversation_through_instagram_comment',
+      meta: {
+        permissions: CONVERSATION_PERMISSIONS,
+      },
+      component: ConversationView,
+      props: route => ({
+        conversationId: route.params.conversationId,
+        conversationType: 'instagram_comment',
+      }),
+    },
   ],
 };

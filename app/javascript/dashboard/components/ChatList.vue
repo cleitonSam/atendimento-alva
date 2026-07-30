@@ -290,6 +290,12 @@ const pageTitle = computed(() => {
   if (props.conversationType === wootConstants.CONVERSATION_TYPE.UNATTENDED) {
     return t('CHAT_LIST.UNATTENDED_HEADING');
   }
+  if (
+    props.conversationType ===
+    wootConstants.CONVERSATION_TYPE.INSTAGRAM_COMMENT
+  ) {
+    return t('SIDEBAR.INSTAGRAM_COMMENTS');
+  }
   if (hasActiveFolders.value) {
     return activeFolder.value.name;
   }
