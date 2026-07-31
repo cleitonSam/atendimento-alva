@@ -103,8 +103,15 @@ const isVideo = computed(() => !!props.video?.preview);
       v-else
       class="relative w-full max-w-[240px] aspect-[9/16] overflow-hidden border shadow-sm rounded-[1.75rem] border-n-weak bg-n-solid-3"
     >
+      <video
+        v-if="hasMedia && isVideo"
+        :src="cover"
+        muted
+        playsinline
+        class="absolute inset-0 object-cover w-full h-full"
+      />
       <img
-        v-if="hasMedia"
+        v-else-if="hasMedia"
         :src="cover"
         alt=""
         class="absolute inset-0 object-cover w-full h-full"
