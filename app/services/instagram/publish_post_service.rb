@@ -19,6 +19,7 @@ class Instagram::PublishPostService
     media_id = create_and_publish
     if media_id.present?
       @post.mark_published!(media_id, fetch_permalink(media_id))
+      create_pending_automation(media_id)
       cleanup_imagekit
     else
       @post.mark_failed!(@error || 'falha ao publicar')
@@ -37,6 +38,29 @@ class Instagram::PublishPostService
     file_ids = @post.image_file_ids
     Imagekit::DeleteFilesJob.perform_later(file_ids) if file_ids.present?
     @post.update_columns(image_urls: [], image_file_ids: []) # rubocop:disable Rails/SkipsModelValidations
+  end
+
+  # Unifica publicar + automatizar: se o post trouxe uma automacao pendente, cria a
+  # InstagramCommentAutomation JA com o media_id publicado (sem o usuario colar id).
+  def create_pending_automation(media_id)
+    cfg = @post.pending_automation
+    return if cfg.blank?
+
+    @post.account.instagram_comment_automations.create!(
+      inbox: @post.inbox,
+      media_id: media_id,
+      name: cfg['name'].presence || "Automação #{media_id}",
+      keywords: cfg['keywords'],
+      match_type: cfg['match_type'].presence || 'contains',
+      dm_message: cfg['dm_message'],
+      dm_link: cfg['dm_link'],
+      dm_button_label: cfg['dm_button_label'],
+      public_reply: cfg['public_reply'],
+      once_per_user: cfg.fetch('once_per_user', true),
+      enabled: true
+    )
+  rescue StandardError => e
+    Rails.logger.error "[IG-PUBLISH] criar automacao pendente falhou (post #{@post.id}): #{e.message}"
   end
 
   def create_and_publish

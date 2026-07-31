@@ -7,6 +7,7 @@
 #  image_file_ids     :jsonb            not null
 #  image_urls         :jsonb            not null
 #  last_error         :text
+#  pending_automation :jsonb
 #  permalink          :string
 #  scheduled_at       :datetime
 #  status             :string           default("scheduled"), not null

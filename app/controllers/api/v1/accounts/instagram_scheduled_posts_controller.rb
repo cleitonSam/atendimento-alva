@@ -53,6 +53,10 @@ class Api::V1::Accounts::InstagramScheduledPostsController < Api::V1::Accounts::
   end
 
   def post_params
-    params.require(:instagram_scheduled_post).permit(:inbox_id, :caption, :scheduled_at, image_urls: [], image_file_ids: [])
+    params.require(:instagram_scheduled_post).permit(
+      :inbox_id, :caption, :scheduled_at,
+      image_urls: [], image_file_ids: [],
+      pending_automation: [:name, :keywords, :match_type, :dm_message, :dm_link, :dm_button_label, :public_reply, :once_per_user]
+    )
   end
 end
