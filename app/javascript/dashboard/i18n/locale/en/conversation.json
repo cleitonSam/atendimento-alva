@@ -1,4 +1,38 @@
 {
+  "INSTAGRAM_PUBLISH": {
+    "TITLE": "Publish",
+    "NEW": "New post",
+    "EMPTY": "No posts yet. Upload images and publish (or schedule) a post or carousel to Instagram.",
+    "LOAD_ERROR": "Couldn't load the posts.",
+    "SAVE_ERROR": "Couldn't save. Please try again.",
+    "UPLOAD_ERROR": "Couldn't upload the image.",
+    "MAX_IMAGES": "Up to {count} images per post.",
+    "SCHEDULED_OK": "Post scheduled.",
+    "PUBLISHING_OK": "Publishing… it appears in a few seconds.",
+    "DELETE_CONFIRM": "Delete this post?",
+    "STATUS": {
+      "SCHEDULED": "Scheduled",
+      "PUBLISHING": "Publishing",
+      "PUBLISHED": "Published",
+      "FAILED": "Failed"
+    },
+    "CAROUSEL": "Carousel · {count}",
+    "NO_CAPTION": "No caption",
+    "VIEW": "View on Instagram →",
+    "DELETE": "Delete",
+    "INBOX": "Instagram account",
+    "IMAGES": "Images",
+    "ADD_IMAGE": "Add",
+    "IMAGES_HINT": "1 image = single post, 2+ = carousel (up to {count}).",
+    "CAPTION": "Caption",
+    "CAPTION_PH": "Write the caption…",
+    "WHEN": "When",
+    "NOW": "Publish now",
+    "SCHEDULE": "Schedule",
+    "CANCEL": "Cancel",
+    "SCHEDULE_BTN": "Schedule",
+    "PUBLISH_BTN": "Publish"
+  },
   "INSTAGRAM_AUTOMATIONS": {
     "TITLE": "Comment automations",
     "NEW": "New automation",

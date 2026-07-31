@@ -4,6 +4,7 @@ import store from '../../../store';
 import ConversationView from './ConversationView.vue';
 import InstagramCommentsView from './InstagramCommentsView.vue';
 import InstagramAutomationsView from './InstagramAutomationsView.vue';
+import InstagramPublishView from './InstagramPublishView.vue';
 
 const CONVERSATION_PERMISSIONS = [
   'administrator',
@@ -261,6 +262,14 @@ export default {
         permissions: CONVERSATION_PERMISSIONS,
       },
       component: InstagramAutomationsView,
+    },
+    {
+      path: frontendURL('accounts/:accountId/instagram-publish'),
+      name: 'instagram_publish',
+      meta: {
+        permissions: CONVERSATION_PERMISSIONS,
+      },
+      component: InstagramPublishView,
     },
   ],
 };

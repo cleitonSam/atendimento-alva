@@ -438,6 +438,13 @@ const menuItems = computed(() => {
                 icon: 'i-lucide-bot-message-square',
                 to: accountScopedRoute('instagram_automations'),
               },
+              {
+                name: 'InstagramPublish',
+                activeOn: ['instagram_publish'],
+                label: t('SIDEBAR.INSTAGRAM_PUBLISH'),
+                icon: 'i-lucide-image-plus',
+                to: accountScopedRoute('instagram_publish'),
+              },
             ]
           : []),
         {

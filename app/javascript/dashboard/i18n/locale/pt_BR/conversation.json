@@ -1,4 +1,38 @@
 {
+  "INSTAGRAM_PUBLISH": {
+    "TITLE": "Publicações",
+    "NEW": "Nova publicação",
+    "EMPTY": "Nenhuma publicação ainda. Suba imagens e publique (ou agende) um post ou carrossel no Instagram.",
+    "LOAD_ERROR": "Não foi possível carregar as publicações.",
+    "SAVE_ERROR": "Não foi possível salvar. Tente de novo.",
+    "UPLOAD_ERROR": "Não foi possível subir a imagem.",
+    "MAX_IMAGES": "Até {count} imagens por publicação.",
+    "SCHEDULED_OK": "Publicação agendada.",
+    "PUBLISHING_OK": "Publicando… aparece em alguns segundos.",
+    "DELETE_CONFIRM": "Excluir esta publicação?",
+    "STATUS": {
+      "SCHEDULED": "Agendado",
+      "PUBLISHING": "Publicando",
+      "PUBLISHED": "Publicado",
+      "FAILED": "Falhou"
+    },
+    "CAROUSEL": "Carrossel · {count}",
+    "NO_CAPTION": "Sem legenda",
+    "VIEW": "Ver no Instagram →",
+    "DELETE": "Excluir",
+    "INBOX": "Conta do Instagram",
+    "IMAGES": "Imagens",
+    "ADD_IMAGE": "Adicionar",
+    "IMAGES_HINT": "1 imagem = post único, 2+ = carrossel (até {count}).",
+    "CAPTION": "Legenda",
+    "CAPTION_PH": "Escreva a legenda…",
+    "WHEN": "Quando",
+    "NOW": "Publicar agora",
+    "SCHEDULE": "Agendar",
+    "CANCEL": "Cancelar",
+    "SCHEDULE_BTN": "Agendar",
+    "PUBLISH_BTN": "Publicar"
+  },
   "INSTAGRAM_AUTOMATIONS": {
     "TITLE": "Automações de comentário",
     "NEW": "Nova automação",
