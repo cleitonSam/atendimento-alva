@@ -15,7 +15,7 @@ class InstagramScheduledPostPolicy < ApplicationPolicy
     create?
   end
 
-  def upload?
+  def imagekit_auth?
     create?
   end
 end

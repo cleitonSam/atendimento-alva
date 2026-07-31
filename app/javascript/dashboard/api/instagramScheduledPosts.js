@@ -6,9 +6,9 @@ class InstagramScheduledPostsAPI extends ApiClient {
     super('instagram_scheduled_posts', { accountScoped: true });
   }
 
-  // Sobe uma imagem (base64/dataURL) pro ImageKit e devolve { url }.
-  upload(file, fileName) {
-    return axios.post(`${this.url}/upload`, { file, file_name: fileName });
+  // Assinatura pro upload client-side do ImageKit (token/expire/signature/public_key).
+  imagekitAuth() {
+    return axios.get(`${this.url}/imagekit_auth`);
   }
 }
 

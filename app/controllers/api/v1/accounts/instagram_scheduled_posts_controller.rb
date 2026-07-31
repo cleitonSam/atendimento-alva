@@ -22,13 +22,14 @@ class Api::V1::Accounts::InstagramScheduledPostsController < Api::V1::Accounts::
     head :ok
   end
 
-  # Recebe uma imagem (base64/dataURL) e devolve a URL publica do ImageKit.
-  def upload
-    result = Imagekit::UploadService.new(file: params[:file], file_name: params[:file_name]).perform
-    if result[:url].present?
-      render json: { url: result[:url] }
-    else
+  # Assinatura pro upload CLIENT-SIDE do ImageKit (o navegador sobe a imagem direto;
+  # nao passa o base64 gigante pelo nosso backend).
+  def imagekit_auth
+    result = Imagekit::AuthService.new.perform
+    if result[:error]
       render json: { error: result[:error] }, status: :unprocessable_entity
+    else
+      render json: result
     end
   end
 

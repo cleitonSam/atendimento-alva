@@ -82,17 +82,36 @@ async function onFiles(event) {
     form.value.images.push(image);
     try {
       // eslint-disable-next-line no-await-in-loop
-      const { data } = await PostsAPI.upload(preview, file.name);
-      image.url = data.url;
+      image.url = await uploadToImagekit(file);
     } catch (error) {
       form.value.images = form.value.images.filter(img => img !== image);
-      useAlert(
-        error?.response?.data?.error || t('INSTAGRAM_PUBLISH.UPLOAD_ERROR')
-      );
+      useAlert(error?.message || t('INSTAGRAM_PUBLISH.UPLOAD_ERROR'));
     } finally {
       image.uploading = false;
     }
   }
+}
+
+// Sobe o arquivo DIRETO pro ImageKit com a assinatura do backend (fetch cru, sem
+// mandar os headers de auth do app pro ImageKit; a foto nao passa pelo nosso servidor).
+async function uploadToImagekit(file) {
+  const { data: auth } = await PostsAPI.imagekitAuth();
+  if (!auth || auth.error) throw new Error(t('INSTAGRAM_PUBLISH.UPLOAD_ERROR'));
+
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('fileName', file.name || 'upload.jpg');
+  fd.append('publicKey', auth.public_key);
+  fd.append('signature', auth.signature);
+  fd.append('expire', auth.expire);
+  fd.append('token', auth.token);
+  fd.append('useUniqueFileName', 'true');
+
+  const res = await fetch(auth.upload_url, { method: 'POST', body: fd });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.url)
+    throw new Error(json?.message || 'ImageKit upload failed');
+  return json.url;
 }
 
 const removeImage = image => {
