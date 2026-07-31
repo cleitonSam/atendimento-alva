@@ -2,6 +2,11 @@
   "INSTAGRAM_PUBLISH": {
     "TITLE": "Publish",
     "NEW": "New post",
+    "SECTION_MEDIA": "Post",
+    "SECTION_WHEN": "When to publish",
+    "SECTION_AUTOMATION": "Comment automation",
+    "AUTOMATION_HINT": "People who comment the keyword on this post get an automatic DM.",
+    "AUTOMATION_ENABLE": "Enable for this post",
     "EMPTY": "No posts yet. Upload images and publish (or schedule) a post or carousel to Instagram.",
     "LOAD_ERROR": "Couldn't load the posts.",
     "SAVE_ERROR": "Couldn't save. Please try again.",

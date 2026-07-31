@@ -9,6 +9,9 @@ import PostsAPI from 'dashboard/api/instagramScheduledPosts';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 
 const MAX_IMAGES = 10;
+const MATCH_TYPES = ['contains', 'exact', 'any'];
+const INPUT_CLASS =
+  'w-full px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 transition focus:outline-none focus:border-n-brand focus:ring-1 focus:ring-n-brand/40';
 
 const { t } = useI18n();
 const store = useStore();
@@ -25,9 +28,19 @@ const mode = ref('list'); // list | form
 const blankForm = () => ({
   inbox_id: igInboxes.value[0]?.id ?? null,
   caption: '',
-  images: [], // { preview, url, uploading }
+  images: [], // { preview, url, fileId, uploading }
   schedule: 'now', // now | later
   scheduled_at: '',
+  automation: {
+    enabled: false,
+    match_type: 'contains',
+    keywords: '',
+    dm_message: '',
+    dm_link: '',
+    dm_button_label: '',
+    public_reply: '',
+    once_per_user: true,
+  },
 });
 const form = ref(blankForm());
 
@@ -65,6 +78,28 @@ const readAsDataUrl = file =>
     reader.readAsDataURL(file);
   });
 
+// Sobe o arquivo DIRETO pro ImageKit com a assinatura do backend (fetch cru, sem
+// mandar os headers de auth do app pro ImageKit; a foto nao passa pelo nosso servidor).
+async function uploadToImagekit(file) {
+  const { data: auth } = await PostsAPI.imagekitAuth();
+  if (!auth || auth.error) throw new Error(t('INSTAGRAM_PUBLISH.UPLOAD_ERROR'));
+
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('fileName', file.name || 'upload.jpg');
+  fd.append('publicKey', auth.public_key);
+  fd.append('signature', auth.signature);
+  fd.append('expire', auth.expire);
+  fd.append('token', auth.token);
+  fd.append('useUniqueFileName', 'true');
+
+  const res = await fetch(auth.upload_url, { method: 'POST', body: fd });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.url)
+    throw new Error(json?.message || 'ImageKit upload failed');
+  return { url: json.url, fileId: json.fileId };
+}
+
 async function onFiles(event) {
   const files = Array.from(event.target.files || []);
   event.target.value = '';
@@ -94,28 +129,6 @@ async function onFiles(event) {
   }
 }
 
-// Sobe o arquivo DIRETO pro ImageKit com a assinatura do backend (fetch cru, sem
-// mandar os headers de auth do app pro ImageKit; a foto nao passa pelo nosso servidor).
-async function uploadToImagekit(file) {
-  const { data: auth } = await PostsAPI.imagekitAuth();
-  if (!auth || auth.error) throw new Error(t('INSTAGRAM_PUBLISH.UPLOAD_ERROR'));
-
-  const fd = new FormData();
-  fd.append('file', file);
-  fd.append('fileName', file.name || 'upload.jpg');
-  fd.append('publicKey', auth.public_key);
-  fd.append('signature', auth.signature);
-  fd.append('expire', auth.expire);
-  fd.append('token', auth.token);
-  fd.append('useUniqueFileName', 'true');
-
-  const res = await fetch(auth.upload_url, { method: 'POST', body: fd });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok || !json.url)
-    throw new Error(json?.message || 'ImageKit upload failed');
-  return { url: json.url, fileId: json.fileId };
-}
-
 const removeImage = image => {
   form.value.images = form.value.images.filter(img => img !== image);
 };
@@ -130,13 +143,38 @@ const uploadedFileIds = computed(() =>
 const anyUploading = computed(() =>
   form.value.images.some(img => img.uploading)
 );
+
+const automationValid = computed(() => {
+  const a = form.value.automation;
+  if (!a.enabled) return true;
+  return (
+    !!a.dm_message.trim() && (a.match_type === 'any' || !!a.keywords.trim())
+  );
+});
 const canSave = computed(
   () =>
     form.value.inbox_id &&
     uploadedUrls.value.length > 0 &&
     !anyUploading.value &&
-    (form.value.schedule === 'now' || form.value.scheduled_at)
+    (form.value.schedule === 'now' || form.value.scheduled_at) &&
+    automationValid.value
 );
+
+function pendingAutomationPayload() {
+  const a = form.value.automation;
+  if (!a.enabled) return null;
+  return {
+    name:
+      form.value.caption.trim().slice(0, 40) || t('INSTAGRAM_AUTOMATIONS.NEW'),
+    match_type: a.match_type,
+    keywords: a.match_type === 'any' ? '' : a.keywords.trim(),
+    dm_message: a.dm_message.trim(),
+    dm_link: a.dm_link.trim(),
+    dm_button_label: a.dm_button_label.trim(),
+    public_reply: a.public_reply.trim(),
+    once_per_user: a.once_per_user,
+  };
+}
 
 async function save() {
   if (!canSave.value || saving.value) return;
@@ -148,12 +186,12 @@ async function save() {
         caption: form.value.caption.trim(),
         image_urls: uploadedUrls.value,
         image_file_ids: uploadedFileIds.value,
-        // datetime-local e hora LOCAL; converte pro instante UTC certo (o backend
-        // interpreta string naive como UTC).
+        // datetime-local e hora LOCAL; converte pro instante UTC certo.
         scheduled_at:
           form.value.schedule === 'later'
             ? new Date(form.value.scheduled_at).toISOString()
             : null,
+        pending_automation: pendingAutomationPayload(),
       },
     });
     useAlert(
@@ -218,7 +256,7 @@ onMounted(() => {
       <button
         v-if="mode === 'list'"
         type="button"
-        class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg bg-n-brand text-n-brand-text hover:brightness-110"
+        class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition rounded-lg bg-n-brand text-n-brand-text hover:brightness-110"
         @click="openCreate"
       >
         <span class="i-lucide-plus size-4" />
@@ -245,7 +283,7 @@ onMounted(() => {
           </p>
           <button
             type="button"
-            class="px-3 py-2 text-sm font-medium rounded-lg bg-n-brand text-n-brand-text hover:brightness-110"
+            class="px-3 py-2 text-sm font-medium transition rounded-lg bg-n-brand text-n-brand-text hover:brightness-110"
             @click="openCreate"
           >
             {{ t('INSTAGRAM_PUBLISH.NEW') }}
@@ -255,7 +293,7 @@ onMounted(() => {
           <li
             v-for="post in posts"
             :key="post.id"
-            class="flex gap-3 p-4 border rounded-xl border-n-weak bg-n-solid-1"
+            class="flex gap-3 p-4 transition border rounded-xl border-n-weak bg-n-solid-1 hover:border-n-slate-5"
           >
             <div
               class="flex-shrink-0 overflow-hidden rounded-lg size-16 bg-n-alpha-2"
@@ -274,7 +312,7 @@ onMounted(() => {
               </div>
             </div>
             <div class="flex flex-col min-w-0 gap-1 flex-1">
-              <div class="flex items-center gap-2">
+              <div class="flex flex-wrap items-center gap-2">
                 <span
                   class="px-1.5 py-0.5 text-[10px] font-semibold rounded-full"
                   :class="statusStyle(post.status)"
@@ -313,7 +351,7 @@ onMounted(() => {
             </div>
             <button
               type="button"
-              class="self-start text-xs font-medium text-n-ruby-9 hover:text-n-ruby-10"
+              class="self-start text-xs font-medium transition text-n-ruby-9 hover:text-n-ruby-10"
               @click="remove(post)"
             >
               {{ t('INSTAGRAM_PUBLISH.DELETE') }}
@@ -325,105 +363,123 @@ onMounted(() => {
       <!-- =================== FORMULARIO =================== -->
       <form
         v-else
-        class="flex flex-col max-w-2xl gap-5 p-6 mx-auto"
+        class="flex flex-col max-w-2xl gap-4 p-6 mx-auto"
         @submit.prevent="save"
       >
-        <div v-if="igInboxes.length > 1" class="flex flex-col gap-1.5">
-          <label class="text-xs font-medium text-n-slate-11">
-            {{ t('INSTAGRAM_PUBLISH.INBOX') }}
-          </label>
-          <select
-            v-model="form.inbox_id"
-            class="px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
-          >
-            <option
-              v-for="inbox in igInboxes"
-              :key="inbox.id"
-              :value="inbox.id"
+        <!-- SECAO: Publicacao -->
+        <fieldset
+          class="flex flex-col gap-4 p-5 border rounded-xl border-n-weak bg-n-solid-1"
+        >
+          <legend class="flex items-center gap-2.5 px-1 -mb-1">
+            <span
+              class="flex items-center justify-center rounded-lg size-8 bg-n-alpha-2 text-n-brand"
             >
-              {{ inbox.name }}
-            </option>
-          </select>
-        </div>
+              <span class="i-lucide-image size-4" />
+            </span>
+            <span class="text-sm font-semibold text-n-slate-12">
+              {{ t('INSTAGRAM_PUBLISH.SECTION_MEDIA') }}
+            </span>
+          </legend>
 
-        <!-- Imagens -->
-        <div class="flex flex-col gap-2">
-          <label class="text-xs font-medium text-n-slate-11">
-            {{ t('INSTAGRAM_PUBLISH.IMAGES') }}
-          </label>
-          <div class="flex flex-wrap gap-2">
-            <div
-              v-for="(image, index) in form.images"
-              :key="index"
-              class="relative overflow-hidden border rounded-lg size-20 border-n-weak bg-n-alpha-2"
-            >
-              <img
-                :src="image.preview"
-                alt=""
-                class="object-cover w-full h-full"
-              />
-              <div
-                v-if="image.uploading"
-                class="absolute inset-0 flex items-center justify-center bg-n-alpha-black2"
-              >
-                <Spinner class="text-white" />
-              </div>
-              <button
-                type="button"
-                :disabled="image.uploading"
-                :aria-label="t('INSTAGRAM_PUBLISH.REMOVE_IMAGE')"
-                class="absolute flex items-center justify-center rounded-full top-1 right-1 size-5 bg-n-solid-1/90 text-n-slate-12 disabled:opacity-50"
-                @click="removeImage(image)"
-              >
-                <span class="i-lucide-x size-3" />
-              </button>
-            </div>
-            <label
-              v-if="form.images.length < MAX_IMAGES"
-              class="flex flex-col items-center justify-center gap-1 text-xs cursor-pointer border border-dashed rounded-lg size-20 border-n-weak text-n-slate-10 hover:border-n-brand hover:text-n-brand"
-            >
-              <span class="i-lucide-plus size-5" />
-              {{ t('INSTAGRAM_PUBLISH.ADD_IMAGE') }}
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                class="hidden"
-                @change="onFiles"
-              />
+          <div v-if="igInboxes.length > 1" class="flex flex-col gap-1.5">
+            <label class="text-xs font-medium text-n-slate-11">
+              {{ t('INSTAGRAM_PUBLISH.INBOX') }}
             </label>
+            <select v-model="form.inbox_id" :class="INPUT_CLASS">
+              <option
+                v-for="inbox in igInboxes"
+                :key="inbox.id"
+                :value="inbox.id"
+              >
+                {{ inbox.name }}
+              </option>
+            </select>
           </div>
-          <p class="text-xs text-n-slate-10">
-            {{ t('INSTAGRAM_PUBLISH.IMAGES_HINT', { count: MAX_IMAGES }) }}
-          </p>
-        </div>
 
-        <!-- Legenda -->
-        <div class="flex flex-col gap-1.5">
-          <label class="text-xs font-medium text-n-slate-11">
-            {{ t('INSTAGRAM_PUBLISH.CAPTION') }}
-          </label>
-          <textarea
-            v-model="form.caption"
-            rows="4"
-            :placeholder="t('INSTAGRAM_PUBLISH.CAPTION_PH')"
-            class="px-3 py-2 text-sm border rounded-lg resize-none bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
-          />
-        </div>
+          <div class="flex flex-col gap-2">
+            <div class="flex flex-wrap gap-2">
+              <div
+                v-for="(image, index) in form.images"
+                :key="index"
+                class="relative overflow-hidden border rounded-lg size-20 border-n-weak bg-n-alpha-2"
+              >
+                <img
+                  :src="image.preview"
+                  alt=""
+                  class="object-cover w-full h-full"
+                />
+                <div
+                  v-if="image.uploading"
+                  class="absolute inset-0 flex items-center justify-center bg-n-alpha-black2"
+                >
+                  <Spinner class="text-white" />
+                </div>
+                <button
+                  type="button"
+                  :disabled="image.uploading"
+                  :aria-label="t('INSTAGRAM_PUBLISH.REMOVE_IMAGE')"
+                  class="absolute flex items-center justify-center transition rounded-full top-1 right-1 size-5 bg-n-solid-1/90 text-n-slate-12 hover:bg-n-solid-1 disabled:opacity-50"
+                  @click="removeImage(image)"
+                >
+                  <span class="i-lucide-x size-3" />
+                </button>
+              </div>
+              <label
+                v-if="form.images.length < MAX_IMAGES"
+                class="flex flex-col items-center justify-center gap-1 text-xs transition cursor-pointer border border-dashed rounded-lg size-20 border-n-weak text-n-slate-10 hover:border-n-brand hover:text-n-brand"
+              >
+                <span class="i-lucide-plus size-5" />
+                {{ t('INSTAGRAM_PUBLISH.ADD_IMAGE') }}
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  class="hidden"
+                  @change="onFiles"
+                />
+              </label>
+            </div>
+            <p class="text-xs text-n-slate-10">
+              {{ t('INSTAGRAM_PUBLISH.IMAGES_HINT', { count: MAX_IMAGES }) }}
+            </p>
+          </div>
 
-        <!-- Quando -->
-        <div class="flex flex-col gap-2">
-          <label class="text-xs font-medium text-n-slate-11">
-            {{ t('INSTAGRAM_PUBLISH.WHEN') }}
-          </label>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-medium text-n-slate-11">
+              {{ t('INSTAGRAM_PUBLISH.CAPTION') }}
+            </label>
+            <textarea
+              v-model="form.caption"
+              rows="4"
+              :placeholder="t('INSTAGRAM_PUBLISH.CAPTION_PH')"
+              class="resize-none"
+              :class="[INPUT_CLASS]"
+            />
+          </div>
+        </fieldset>
+
+        <!-- SECAO: Quando -->
+        <fieldset
+          class="flex flex-col gap-3 p-5 border rounded-xl border-n-weak bg-n-solid-1"
+        >
+          <legend class="flex items-center gap-2.5 px-1 -mb-1">
+            <span
+              class="flex items-center justify-center rounded-lg size-8 bg-n-alpha-2 text-n-brand"
+            >
+              <span class="i-lucide-calendar-clock size-4" />
+            </span>
+            <span class="text-sm font-semibold text-n-slate-12">
+              {{ t('INSTAGRAM_PUBLISH.SECTION_WHEN') }}
+            </span>
+          </legend>
           <div class="flex gap-2">
             <button
               type="button"
-              class="px-3 py-1.5 text-xs font-medium rounded-md"
+              class="px-3 py-1.5 text-xs font-medium transition rounded-md"
               :class="
                 form.schedule === 'now'
                   ? 'bg-n-brand text-n-brand-text'
-                  : 'bg-n-alpha-2 text-n-slate-11'
+                  : 'bg-n-alpha-2 text-n-slate-11 hover:text-n-slate-12'
               "
               @click="form.schedule = 'now'"
             >
@@ -431,11 +487,11 @@ onMounted(() => {
             </button>
             <button
               type="button"
-              class="px-3 py-1.5 text-xs font-medium rounded-md"
+              class="px-3 py-1.5 text-xs font-medium transition rounded-md"
               :class="
                 form.schedule === 'later'
                   ? 'bg-n-brand text-n-brand-text'
-                  : 'bg-n-alpha-2 text-n-slate-11'
+                  : 'bg-n-alpha-2 text-n-slate-11 hover:text-n-slate-12'
               "
               @click="form.schedule = 'later'"
             >
@@ -446,14 +502,137 @@ onMounted(() => {
             v-if="form.schedule === 'later'"
             v-model="form.scheduled_at"
             type="datetime-local"
-            class="px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand w-fit"
+            class="w-fit"
+            :class="[INPUT_CLASS]"
           />
-        </div>
+        </fieldset>
 
-        <div class="flex items-center justify-end gap-2 pt-2">
+        <!-- SECAO: Automacao (opcional) -->
+        <fieldset
+          class="flex flex-col gap-3 p-5 border rounded-xl border-n-weak bg-n-solid-1"
+        >
+          <legend
+            class="flex items-center justify-between w-full gap-2 px-1 -mb-1"
+          >
+            <span class="flex items-center gap-2.5">
+              <span
+                class="flex items-center justify-center rounded-lg size-8 bg-n-alpha-2 text-n-brand"
+              >
+                <span class="i-lucide-bot-message-square size-4" />
+              </span>
+              <span class="flex flex-col">
+                <span class="text-sm font-semibold text-n-slate-12">
+                  {{ t('INSTAGRAM_PUBLISH.SECTION_AUTOMATION') }}
+                </span>
+                <span class="text-xs text-n-slate-10">
+                  {{ t('INSTAGRAM_PUBLISH.AUTOMATION_HINT') }}
+                </span>
+              </span>
+            </span>
+            <label
+              class="flex items-center gap-2 text-xs font-medium cursor-pointer text-n-slate-11"
+            >
+              <input
+                v-model="form.automation.enabled"
+                type="checkbox"
+                class="accent-n-brand size-4"
+              />
+              {{ t('INSTAGRAM_PUBLISH.AUTOMATION_ENABLE') }}
+            </label>
+          </legend>
+
+          <div v-if="form.automation.enabled" class="flex flex-col gap-3 pt-1">
+            <!-- Gatilho -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-xs font-medium text-n-slate-11">
+                {{ t('INSTAGRAM_AUTOMATIONS.TRIGGER') }}
+              </label>
+              <div class="flex gap-2">
+                <button
+                  v-for="type in MATCH_TYPES"
+                  :key="type"
+                  type="button"
+                  class="px-2.5 py-1 text-xs font-medium transition rounded-md"
+                  :class="
+                    form.automation.match_type === type
+                      ? 'bg-n-brand text-n-brand-text'
+                      : 'bg-n-alpha-2 text-n-slate-11 hover:text-n-slate-12'
+                  "
+                  @click="form.automation.match_type = type"
+                >
+                  {{ t(`INSTAGRAM_AUTOMATIONS.MATCH.${type.toUpperCase()}`) }}
+                </button>
+              </div>
+              <input
+                v-if="form.automation.match_type !== 'any'"
+                v-model="form.automation.keywords"
+                type="text"
+                :placeholder="t('INSTAGRAM_AUTOMATIONS.KEYWORDS_PH')"
+                :class="INPUT_CLASS"
+              />
+            </div>
+
+            <!-- DM -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-xs font-medium text-n-slate-11">
+                {{ t('INSTAGRAM_AUTOMATIONS.DM_MESSAGE') }}
+              </label>
+              <textarea
+                v-model="form.automation.dm_message"
+                rows="2"
+                :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_MESSAGE_PH')"
+                class="resize-none"
+                :class="[INPUT_CLASS]"
+              />
+              <div class="flex gap-2">
+                <input
+                  v-model="form.automation.dm_link"
+                  type="url"
+                  :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_LINK_PH')"
+                  class="flex-1"
+                  :class="[INPUT_CLASS]"
+                />
+                <input
+                  v-model="form.automation.dm_button_label"
+                  type="text"
+                  :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_BUTTON_PH')"
+                  class="w-40"
+                  :class="[INPUT_CLASS]"
+                />
+              </div>
+            </div>
+
+            <!-- Resposta publica -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-xs font-medium text-n-slate-11">
+                {{ t('INSTAGRAM_AUTOMATIONS.PUBLIC_REPLY') }}
+              </label>
+              <input
+                v-model="form.automation.public_reply"
+                type="text"
+                :placeholder="t('INSTAGRAM_AUTOMATIONS.PUBLIC_REPLY_PH')"
+                :class="INPUT_CLASS"
+              />
+            </div>
+
+            <label
+              class="flex items-center gap-2 text-sm cursor-pointer text-n-slate-12"
+            >
+              <input
+                v-model="form.automation.once_per_user"
+                type="checkbox"
+                class="accent-n-brand size-4"
+              />
+              {{ t('INSTAGRAM_AUTOMATIONS.ONCE_PER_USER') }}
+            </label>
+          </div>
+        </fieldset>
+
+        <!-- Acoes -->
+        <div class="flex items-center justify-end gap-2 pt-1">
           <button
             type="button"
-            class="px-4 py-2 text-sm font-medium rounded-lg text-n-slate-11 hover:text-n-slate-12"
+            class="px-4 py-2 text-sm font-medium transition rounded-lg text-n-slate-11 hover:text-n-slate-12"
             @click="cancelForm"
           >
             {{ t('INSTAGRAM_PUBLISH.CANCEL') }}
@@ -461,8 +640,9 @@ onMounted(() => {
           <button
             type="submit"
             :disabled="!canSave || saving"
-            class="px-4 py-2 text-sm font-semibold rounded-lg bg-n-brand text-n-brand-text disabled:opacity-50 hover:brightness-110"
+            class="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold transition rounded-lg bg-n-brand text-n-brand-text disabled:opacity-50 hover:brightness-110"
           >
+            <Spinner v-if="saving" class="size-4" />
             {{
               form.schedule === 'later'
                 ? t('INSTAGRAM_PUBLISH.SCHEDULE_BTN')

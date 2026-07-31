@@ -2,6 +2,11 @@
   "INSTAGRAM_PUBLISH": {
     "TITLE": "Publicações",
     "NEW": "Nova publicação",
+    "SECTION_MEDIA": "Publicação",
+    "SECTION_WHEN": "Quando publicar",
+    "SECTION_AUTOMATION": "Automação de comentário",
+    "AUTOMATION_HINT": "Quem comentar a palavra-chave neste post recebe uma DM automática.",
+    "AUTOMATION_ENABLE": "Ativar para este post",
     "EMPTY": "Nenhuma publicação ainda. Suba imagens e publique (ou agende) um post ou carrossel no Instagram.",
     "LOAD_ERROR": "Não foi possível carregar as publicações.",
     "SAVE_ERROR": "Não foi possível salvar. Tente de novo.",
