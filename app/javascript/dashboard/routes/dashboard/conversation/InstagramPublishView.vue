@@ -82,7 +82,9 @@ async function onFiles(event) {
     form.value.images.push(image);
     try {
       // eslint-disable-next-line no-await-in-loop
-      image.url = await uploadToImagekit(file);
+      const uploaded = await uploadToImagekit(file);
+      image.url = uploaded.url;
+      image.fileId = uploaded.fileId;
     } catch (error) {
       form.value.images = form.value.images.filter(img => img !== image);
       useAlert(error?.message || t('INSTAGRAM_PUBLISH.UPLOAD_ERROR'));
@@ -111,7 +113,7 @@ async function uploadToImagekit(file) {
   const json = await res.json().catch(() => ({}));
   if (!res.ok || !json.url)
     throw new Error(json?.message || 'ImageKit upload failed');
-  return json.url;
+  return { url: json.url, fileId: json.fileId };
 }
 
 const removeImage = image => {
@@ -120,6 +122,10 @@ const removeImage = image => {
 
 const uploadedUrls = computed(() =>
   form.value.images.filter(img => img.url).map(img => img.url)
+);
+// Paralelo a uploadedUrls (mesmo filtro/ordem) — pro backend poder deletar no ImageKit.
+const uploadedFileIds = computed(() =>
+  form.value.images.filter(img => img.url).map(img => img.fileId || '')
 );
 const anyUploading = computed(() =>
   form.value.images.some(img => img.uploading)
@@ -141,6 +147,7 @@ async function save() {
         inbox_id: form.value.inbox_id,
         caption: form.value.caption.trim(),
         image_urls: uploadedUrls.value,
+        image_file_ids: uploadedFileIds.value,
         // datetime-local e hora LOCAL; converte pro instante UTC certo (o backend
         // interpreta string naive como UTC).
         scheduled_at:

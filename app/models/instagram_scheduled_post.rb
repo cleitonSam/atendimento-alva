@@ -4,6 +4,7 @@
 #
 #  id                 :bigint           not null, primary key
 #  caption            :text
+#  image_file_ids     :jsonb            not null
 #  image_urls         :jsonb            not null
 #  last_error         :text
 #  permalink          :string

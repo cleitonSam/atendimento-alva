@@ -18,7 +18,10 @@ class Api::V1::Accounts::InstagramScheduledPostsController < Api::V1::Accounts::
   end
 
   def destroy
+    file_ids = @post.image_file_ids
     @post.destroy!
+    # apaga as imagens no ImageKit tambem (nao deixa lixo la)
+    Imagekit::DeleteFilesJob.perform_later(file_ids) if file_ids.present?
     head :ok
   end
 
@@ -50,6 +53,6 @@ class Api::V1::Accounts::InstagramScheduledPostsController < Api::V1::Accounts::
   end
 
   def post_params
-    params.require(:instagram_scheduled_post).permit(:inbox_id, :caption, :scheduled_at, image_urls: [])
+    params.require(:instagram_scheduled_post).permit(:inbox_id, :caption, :scheduled_at, image_urls: [], image_file_ids: [])
   end
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_31_010000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_31_020000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1100,6 +1100,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_31_010000) do
     t.text "last_error"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.jsonb "image_file_ids", default: [], null: false
     t.index ["account_id"], name: "index_instagram_scheduled_posts_on_account_id"
     t.index ["inbox_id"], name: "index_instagram_scheduled_posts_on_inbox_id"
     t.index ["status", "scheduled_at"], name: "index_instagram_scheduled_posts_on_status_and_scheduled_at"
