@@ -95,6 +95,10 @@ class InstagramScheduledPost < ApplicationRecord
   end
 
   def mark_failed!(message)
+    # Nunca rebaixa um post que ja foi publicado (ex.: falha no cleanup pos-publicacao
+    # nao pode marcar como falho um post que ja esta no ar).
+    return if status == 'published'
+
     update!(status: 'failed', last_error: message.to_s[0, 500])
   end
 

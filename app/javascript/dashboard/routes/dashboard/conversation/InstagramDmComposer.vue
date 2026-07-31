@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import { useImagekitUpload } from 'dashboard/composables/useImagekitUpload';
@@ -27,6 +27,9 @@ const localPreview = ref('');
 
 // Avisa o pai quando a capa esta subindo, pra ele travar Salvar/Publicar e nao perder a imagem.
 watch(imageUploading, value => emit('update:uploading', value));
+// Se o composer desmonta no meio do upload (desmarcar automacao, trocar formato, cancelar),
+// o watch para e o emit(false) do finally se perde -> libera o pai aqui pra nao travar o botao.
+onBeforeUnmount(() => emit('update:uploading', false));
 
 function set(patch) {
   emit('update:modelValue', { ...props.modelValue, ...patch });
@@ -104,8 +107,9 @@ function updateButton(index, field, value) {
           </div>
           <button
             type="button"
+            :disabled="imageUploading"
             :aria-label="t('INSTAGRAM_DM.REMOVE_IMAGE')"
-            class="absolute flex items-center justify-center transition rounded-full top-1 right-1 size-5 bg-n-solid-1/90 text-n-slate-12 hover:bg-n-solid-1"
+            class="absolute flex items-center justify-center transition rounded-full top-1 right-1 size-5 bg-n-solid-1/90 text-n-slate-12 hover:bg-n-solid-1 disabled:opacity-50"
             @click="removeImage"
           >
             <span class="i-lucide-x size-3" />

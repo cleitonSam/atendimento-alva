@@ -1,5 +1,13 @@
 module Instagram::IntegrationHelper
-  REQUIRED_SCOPES = %w[instagram_business_basic instagram_business_manage_messages].freeze
+  # content_publish -> estudio de publicacao (feed/reels/story); manage_comments -> moderar
+  # comentarios + postar o 1o comentario automatico. Canais ja conectados precisam
+  # reautorizar pra o token ganhar os escopos novos.
+  REQUIRED_SCOPES = %w[
+    instagram_business_basic
+    instagram_business_manage_messages
+    instagram_business_content_publish
+    instagram_business_manage_comments
+  ].freeze
 
   # Generates a signed JWT token for Instagram integration
   #

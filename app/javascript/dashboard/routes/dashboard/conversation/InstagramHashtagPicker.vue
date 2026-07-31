@@ -7,7 +7,8 @@ import HashtagSetsAPI from 'dashboard/api/instagramHashtagSets';
 // Conjuntos de hashtags reutilizaveis: clica no chip pra inserir; salva o texto atual
 // como um novo conjunto; mostra a contagem (Instagram permite ate 30 no total).
 const props = defineProps({
-  currentText: { type: String, default: '' }, // texto onde as hashtags entram (pra contar/salvar)
+  currentText: { type: String, default: '' }, // onde as hashtags entram (1o comentario)
+  captionText: { type: String, default: '' }, // legenda (conta pro total, nao pro salvar)
 });
 const emit = defineEmits(['insert']);
 
@@ -20,8 +21,10 @@ const newName = ref('');
 const showSave = ref(false);
 
 const HASHTAG_RE = /#[\p{L}\p{N}_]+/gu;
+// Instagram conta ate 30 no TOTAL entre legenda + comentario.
 const tagCount = computed(
-  () => (props.currentText.match(HASHTAG_RE) || []).length
+  () =>
+    (`${props.captionText} ${props.currentText}`.match(HASHTAG_RE) || []).length
 );
 const overLimit = computed(() => tagCount.value > 30);
 

@@ -47,6 +47,9 @@ class Instagram::PublishPostService
     # rubocop:disable Rails/SkipsModelValidations
     @post.update_columns(image_urls: [], image_file_ids: [], video_url: nil, video_file_id: nil)
     # rubocop:enable Rails/SkipsModelValidations
+  rescue StandardError => e
+    # Nunca deixa um blip de Redis/DB no cleanup rebaixar um post ja publicado.
+    Rails.logger.error "[IG-PUBLISH] cleanup ImageKit falhou (post #{@post.id}): #{e.message}"
   end
 
   # Unifica publicar + automatizar: se o post trouxe uma automacao pendente, cria a

@@ -820,6 +820,7 @@ onMounted(() => {
             <!-- Conjuntos de hashtags -->
             <InstagramHashtagPicker
               :current-text="form.first_comment"
+              :caption-text="form.caption"
               @insert="insertHashtags"
             />
 
