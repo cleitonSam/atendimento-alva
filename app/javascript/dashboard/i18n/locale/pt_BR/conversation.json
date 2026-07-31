@@ -42,6 +42,9 @@
   "INSTAGRAM_AUTOMATIONS": {
     "TITLE": "Automações de comentário",
     "NEW": "Nova automação",
+    "SECTION_RULE": "Regra",
+    "SECTION_REPLY": "Resposta (comente → DM)",
+    "SECTION_SCHEDULE": "Agendamento e ativação",
     "EMPTY": "Nenhuma automação ainda. Crie uma pra quem comentar a palavra-chave no seu post receber uma DM automática.",
     "LOAD_ERROR": "Não foi possível carregar as automações.",
     "SAVE_ERROR": "Não foi possível salvar. Tente de novo.",

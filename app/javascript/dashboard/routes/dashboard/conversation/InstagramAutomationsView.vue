@@ -21,6 +21,10 @@ const loading = ref(false);
 const saving = ref(false);
 const mode = ref('list'); // list | form
 const MATCH_TYPES = ['contains', 'exact', 'any'];
+const SECTION_CLASS =
+  'flex flex-col gap-4 p-5 border rounded-xl border-n-weak bg-n-solid-1';
+const LEGEND_ICON_CLASS =
+  'flex items-center justify-center rounded-lg size-8 bg-n-alpha-2 text-n-brand';
 
 const blankForm = () => ({
   id: null,
@@ -298,200 +302,230 @@ onMounted(() => {
       <!-- =================== FORMULARIO =================== -->
       <form
         v-else
-        class="flex flex-col max-w-2xl gap-5 p-6 mx-auto"
+        class="flex flex-col max-w-2xl gap-4 p-6 mx-auto"
         @submit.prevent="save"
       >
-        <!-- Inbox (se houver mais de um) -->
-        <div v-if="igInboxes.length > 1" class="flex flex-col gap-1.5">
-          <label class="text-xs font-medium text-n-slate-11">
-            {{ t('INSTAGRAM_AUTOMATIONS.INBOX') }}
-          </label>
-          <select
-            v-model="form.inbox_id"
-            class="px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
-          >
-            <option
-              v-for="inbox in igInboxes"
-              :key="inbox.id"
-              :value="inbox.id"
+        <fieldset :class="SECTION_CLASS">
+          <legend class="flex items-center gap-2.5 px-1 -mb-1">
+            <span :class="LEGEND_ICON_CLASS">
+              <span class="i-lucide-bot-message-square size-4" />
+            </span>
+            <span class="text-sm font-semibold text-n-slate-12">
+              {{ t('INSTAGRAM_AUTOMATIONS.SECTION_RULE') }}
+            </span>
+          </legend>
+          <!-- Inbox (se houver mais de um) -->
+          <div v-if="igInboxes.length > 1" class="flex flex-col gap-1.5">
+            <label class="text-xs font-medium text-n-slate-11">
+              {{ t('INSTAGRAM_AUTOMATIONS.INBOX') }}
+            </label>
+            <select
+              v-model="form.inbox_id"
+              class="px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
             >
-              {{ inbox.name }}
-            </option>
-          </select>
-        </div>
-
-        <div class="flex flex-col gap-1.5">
-          <label class="text-xs font-medium text-n-slate-11">
-            {{ t('INSTAGRAM_AUTOMATIONS.NAME') }}
-          </label>
-          <input
-            v-model="form.name"
-            type="text"
-            :placeholder="t('INSTAGRAM_AUTOMATIONS.NAME_PH')"
-            class="px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
-          />
-        </div>
-
-        <!-- Onde aplica -->
-        <div class="flex flex-col gap-1.5">
-          <label class="text-xs font-medium text-n-slate-11">
-            {{ t('INSTAGRAM_AUTOMATIONS.TARGET') }}
-          </label>
-          <div class="flex gap-2">
-            <button
-              type="button"
-              class="px-3 py-1.5 text-xs font-medium rounded-md"
-              :class="
-                form.target === 'any'
-                  ? 'bg-n-brand text-n-brand-text'
-                  : 'bg-n-alpha-2 text-n-slate-11'
-              "
-              @click="form.target = 'any'"
-            >
-              {{ t('INSTAGRAM_AUTOMATIONS.ANY_POST') }}
-            </button>
-            <button
-              type="button"
-              class="px-3 py-1.5 text-xs font-medium rounded-md"
-              :class="
-                form.target === 'specific'
-                  ? 'bg-n-brand text-n-brand-text'
-                  : 'bg-n-alpha-2 text-n-slate-11'
-              "
-              @click="form.target = 'specific'"
-            >
-              {{ t('INSTAGRAM_AUTOMATIONS.ONE_POST') }}
-            </button>
+              <option
+                v-for="inbox in igInboxes"
+                :key="inbox.id"
+                :value="inbox.id"
+              >
+                {{ inbox.name }}
+              </option>
+            </select>
           </div>
-          <input
-            v-if="form.target === 'specific'"
-            v-model="form.media_id"
-            type="text"
-            :placeholder="t('INSTAGRAM_AUTOMATIONS.MEDIA_ID_PH')"
-            class="mt-1 px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
-          />
-        </div>
 
-        <!-- Gatilho -->
-        <div class="flex flex-col gap-1.5">
-          <label class="text-xs font-medium text-n-slate-11">
-            {{ t('INSTAGRAM_AUTOMATIONS.TRIGGER') }}
-          </label>
-          <div class="flex gap-2">
-            <button
-              v-for="type in MATCH_TYPES"
-              :key="type"
-              type="button"
-              class="px-2.5 py-1 text-xs font-medium rounded-md"
-              :class="
-                form.match_type === type
-                  ? 'bg-n-brand text-n-brand-text'
-                  : 'bg-n-alpha-2 text-n-slate-11'
-              "
-              @click="form.match_type = type"
-            >
-              {{ t(`INSTAGRAM_AUTOMATIONS.MATCH.${type.toUpperCase()}`) }}
-            </button>
-          </div>
-          <input
-            v-if="form.match_type !== 'any'"
-            v-model="form.keywords"
-            type="text"
-            :placeholder="t('INSTAGRAM_AUTOMATIONS.KEYWORDS_PH')"
-            class="mt-1 px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
-          />
-        </div>
-
-        <!-- DM -->
-        <div class="flex flex-col gap-1.5">
-          <label class="text-xs font-medium text-n-slate-11">
-            {{ t('INSTAGRAM_AUTOMATIONS.DM_MESSAGE') }}
-          </label>
-          <textarea
-            v-model="form.dm_message"
-            rows="3"
-            :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_MESSAGE_PH')"
-            class="px-3 py-2 text-sm border rounded-lg resize-none bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
-          />
-          <div class="flex gap-2">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-medium text-n-slate-11">
+              {{ t('INSTAGRAM_AUTOMATIONS.NAME') }}
+            </label>
             <input
-              v-model="form.dm_link"
-              type="url"
-              :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_LINK_PH')"
-              class="flex-1 px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
-            />
-            <input
-              v-model="form.dm_button_label"
+              v-model="form.name"
               type="text"
-              :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_BUTTON_PH')"
-              class="w-40 px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
+              :placeholder="t('INSTAGRAM_AUTOMATIONS.NAME_PH')"
+              class="px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
             />
           </div>
-        </div>
 
-        <!-- Resposta publica -->
-        <div class="flex flex-col gap-1.5">
-          <label class="text-xs font-medium text-n-slate-11">
-            {{ t('INSTAGRAM_AUTOMATIONS.PUBLIC_REPLY') }}
+          <!-- Onde aplica -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-medium text-n-slate-11">
+              {{ t('INSTAGRAM_AUTOMATIONS.TARGET') }}
+            </label>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="px-3 py-1.5 text-xs font-medium rounded-md"
+                :class="
+                  form.target === 'any'
+                    ? 'bg-n-brand text-n-brand-text'
+                    : 'bg-n-alpha-2 text-n-slate-11'
+                "
+                @click="form.target = 'any'"
+              >
+                {{ t('INSTAGRAM_AUTOMATIONS.ANY_POST') }}
+              </button>
+              <button
+                type="button"
+                class="px-3 py-1.5 text-xs font-medium rounded-md"
+                :class="
+                  form.target === 'specific'
+                    ? 'bg-n-brand text-n-brand-text'
+                    : 'bg-n-alpha-2 text-n-slate-11'
+                "
+                @click="form.target = 'specific'"
+              >
+                {{ t('INSTAGRAM_AUTOMATIONS.ONE_POST') }}
+              </button>
+            </div>
+            <input
+              v-if="form.target === 'specific'"
+              v-model="form.media_id"
+              type="text"
+              :placeholder="t('INSTAGRAM_AUTOMATIONS.MEDIA_ID_PH')"
+              class="mt-1 px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
+            />
+          </div>
+
+          <!-- Gatilho -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-medium text-n-slate-11">
+              {{ t('INSTAGRAM_AUTOMATIONS.TRIGGER') }}
+            </label>
+            <div class="flex gap-2">
+              <button
+                v-for="type in MATCH_TYPES"
+                :key="type"
+                type="button"
+                class="px-2.5 py-1 text-xs font-medium rounded-md"
+                :class="
+                  form.match_type === type
+                    ? 'bg-n-brand text-n-brand-text'
+                    : 'bg-n-alpha-2 text-n-slate-11'
+                "
+                @click="form.match_type = type"
+              >
+                {{ t(`INSTAGRAM_AUTOMATIONS.MATCH.${type.toUpperCase()}`) }}
+              </button>
+            </div>
+            <input
+              v-if="form.match_type !== 'any'"
+              v-model="form.keywords"
+              type="text"
+              :placeholder="t('INSTAGRAM_AUTOMATIONS.KEYWORDS_PH')"
+              class="mt-1 px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
+            />
+          </div>
+        </fieldset>
+
+        <fieldset :class="SECTION_CLASS">
+          <legend class="flex items-center gap-2.5 px-1 -mb-1">
+            <span :class="LEGEND_ICON_CLASS">
+              <span class="i-lucide-message-square-text size-4" />
+            </span>
+            <span class="text-sm font-semibold text-n-slate-12">
+              {{ t('INSTAGRAM_AUTOMATIONS.SECTION_REPLY') }}
+            </span>
+          </legend>
+          <!-- DM -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-medium text-n-slate-11">
+              {{ t('INSTAGRAM_AUTOMATIONS.DM_MESSAGE') }}
+            </label>
+            <textarea
+              v-model="form.dm_message"
+              rows="3"
+              :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_MESSAGE_PH')"
+              class="px-3 py-2 text-sm border rounded-lg resize-none bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
+            />
+            <div class="flex gap-2">
+              <input
+                v-model="form.dm_link"
+                type="url"
+                :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_LINK_PH')"
+                class="flex-1 px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
+              />
+              <input
+                v-model="form.dm_button_label"
+                type="text"
+                :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_BUTTON_PH')"
+                class="w-40 px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
+              />
+            </div>
+          </div>
+
+          <!-- Resposta publica -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-medium text-n-slate-11">
+              {{ t('INSTAGRAM_AUTOMATIONS.PUBLIC_REPLY') }}
+            </label>
+            <input
+              v-model="form.public_reply"
+              type="text"
+              :placeholder="t('INSTAGRAM_AUTOMATIONS.PUBLIC_REPLY_PH')"
+              class="px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
+            />
+          </div>
+        </fieldset>
+
+        <fieldset :class="SECTION_CLASS">
+          <legend class="flex items-center gap-2.5 px-1 -mb-1">
+            <span :class="LEGEND_ICON_CLASS">
+              <span class="i-lucide-calendar-clock size-4" />
+            </span>
+            <span class="text-sm font-semibold text-n-slate-12">
+              {{ t('INSTAGRAM_AUTOMATIONS.SECTION_SCHEDULE') }}
+            </span>
+          </legend>
+          <!-- Agendamento -->
+          <div class="flex flex-wrap gap-4">
+            <div class="flex flex-col gap-1.5">
+              <label class="text-xs font-medium text-n-slate-11">
+                {{ t('INSTAGRAM_AUTOMATIONS.STARTS_AT') }}
+              </label>
+              <input
+                v-model="form.starts_at"
+                type="datetime-local"
+                class="px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
+              />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-xs font-medium text-n-slate-11">
+                {{ t('INSTAGRAM_AUTOMATIONS.ENDS_AT') }}
+              </label>
+              <input
+                v-model="form.ends_at"
+                type="datetime-local"
+                class="px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
+              />
+            </div>
+          </div>
+
+          <!-- Toggles -->
+          <label
+            class="flex items-center gap-2 text-sm cursor-pointer text-n-slate-12"
+          >
+            <input
+              v-model="form.once_per_user"
+              type="checkbox"
+              class="accent-n-brand"
+            />
+            {{ t('INSTAGRAM_AUTOMATIONS.ONCE_PER_USER') }}
           </label>
-          <input
-            v-model="form.public_reply"
-            type="text"
-            :placeholder="t('INSTAGRAM_AUTOMATIONS.PUBLIC_REPLY_PH')"
-            class="px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
-          />
-        </div>
-
-        <!-- Agendamento -->
-        <div class="flex flex-wrap gap-4">
-          <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-medium text-n-slate-11">
-              {{ t('INSTAGRAM_AUTOMATIONS.STARTS_AT') }}
-            </label>
+          <label
+            class="flex items-center gap-2 text-sm cursor-pointer text-n-slate-12"
+          >
             <input
-              v-model="form.starts_at"
-              type="datetime-local"
-              class="px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
+              v-model="form.enabled"
+              type="checkbox"
+              class="accent-n-brand"
             />
-          </div>
-          <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-medium text-n-slate-11">
-              {{ t('INSTAGRAM_AUTOMATIONS.ENDS_AT') }}
-            </label>
-            <input
-              v-model="form.ends_at"
-              type="datetime-local"
-              class="px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
-            />
-          </div>
-        </div>
+            {{ t('INSTAGRAM_AUTOMATIONS.ENABLED') }}
+          </label>
+        </fieldset>
 
-        <!-- Toggles -->
-        <label
-          class="flex items-center gap-2 text-sm cursor-pointer text-n-slate-12"
-        >
-          <input
-            v-model="form.once_per_user"
-            type="checkbox"
-            class="accent-n-brand"
-          />
-          {{ t('INSTAGRAM_AUTOMATIONS.ONCE_PER_USER') }}
-        </label>
-        <label
-          class="flex items-center gap-2 text-sm cursor-pointer text-n-slate-12"
-        >
-          <input
-            v-model="form.enabled"
-            type="checkbox"
-            class="accent-n-brand"
-          />
-          {{ t('INSTAGRAM_AUTOMATIONS.ENABLED') }}
-        </label>
-
-        <div class="flex items-center justify-end gap-2 pt-2">
+        <div class="flex items-center justify-end gap-2 pt-1">
           <button
             type="button"
-            class="px-4 py-2 text-sm font-medium rounded-lg text-n-slate-11 hover:text-n-slate-12"
+            class="px-4 py-2 text-sm font-medium transition rounded-lg text-n-slate-11 hover:text-n-slate-12"
             @click="cancelForm"
           >
             {{ t('INSTAGRAM_AUTOMATIONS.CANCEL') }}
