@@ -54,21 +54,21 @@ class Instagram::PublishPostService
     cfg = @post.pending_automation
     return if cfg.blank? || !@post.supports_automation?
 
-    @post.account.instagram_comment_automations.create!(
-      inbox: @post.inbox,
-      media_id: media_id,
-      name: cfg['name'].presence || "Automação #{media_id}",
-      keywords: cfg['keywords'],
-      match_type: cfg['match_type'].presence || 'contains',
-      dm_message: cfg['dm_message'],
-      dm_link: cfg['dm_link'],
-      dm_button_label: cfg['dm_button_label'],
-      public_reply: cfg['public_reply'],
-      once_per_user: cfg.fetch('once_per_user', true),
-      enabled: true
-    )
+    @post.account.instagram_comment_automations.create!(pending_automation_attrs(cfg, media_id))
   rescue StandardError => e
     Rails.logger.error "[IG-PUBLISH] criar automacao pendente falhou (post #{@post.id}): #{e.message}"
+  end
+
+  def pending_automation_attrs(cfg, media_id)
+    {
+      inbox: @post.inbox, media_id: media_id, enabled: true,
+      name: cfg['name'].presence || "Automação #{media_id}",
+      keywords: cfg['keywords'], match_type: cfg['match_type'].presence || 'contains',
+      dm_message: cfg['dm_message'], dm_link: cfg['dm_link'], dm_button_label: cfg['dm_button_label'],
+      dm_buttons: Array(cfg['dm_buttons']), dm_image_url: cfg['dm_image_url'],
+      dm_image_file_id: cfg['dm_image_file_id'], dm_card_title: cfg['dm_card_title'],
+      public_reply: cfg['public_reply'], once_per_user: cfg.fetch('once_per_user', true)
+    }
   end
 
   def create_and_publish

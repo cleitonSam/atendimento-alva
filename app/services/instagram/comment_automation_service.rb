@@ -81,20 +81,34 @@ class Instagram::CommentAutomationService
     { ok: response.success?, code: response.code }
   end
 
-  # Com link -> template de botao (web_url); sem link -> texto puro.
+  # Monta a DM conforme a config:
+  #   - com imagem  -> generic template (card: capa + titulo + subtitulo + ate 3 botoes)
+  #   - so botoes   -> button template  (texto + ate 3 botoes)
+  #   - so texto    -> texto puro
   def dm_payload(automation)
-    return { text: automation.dm_message } if automation.dm_link.blank?
+    buttons = automation.dm_buttons_for_payload
+    return card_payload(automation, buttons) if automation.dm_card?
+    return button_payload(automation, buttons) if buttons.any?
 
-    {
-      attachment: {
-        type: 'template',
-        payload: {
-          template_type: 'button',
-          text: automation.dm_message,
-          buttons: [{ type: 'web_url', url: automation.dm_link, title: automation.dm_button_label.presence || 'Abrir' }]
-        }
-      }
+    { text: automation.dm_message }
+  end
+
+  def card_payload(automation, buttons)
+    limit = InstagramCommentAutomation::CARD_TEXT_LIMIT
+    element = {
+      title: automation.dm_card_title.to_s[0, limit],
+      image_url: automation.dm_image_url
     }
+    element[:subtitle] = automation.dm_message.to_s[0, limit] if automation.dm_message.present?
+    if buttons.any?
+      element[:buttons] = buttons
+      element[:default_action] = { type: 'web_url', url: buttons.first[:url] }
+    end
+    { attachment: { type: 'template', payload: { template_type: 'generic', elements: [element] } } }
+  end
+
+  def button_payload(automation, buttons)
+    { attachment: { type: 'template', payload: { template_type: 'button', text: automation.dm_message, buttons: buttons } } }
   end
 
   def send_public_reply(automation)

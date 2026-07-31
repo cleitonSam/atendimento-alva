@@ -9,7 +9,10 @@ import PostsAPI from 'dashboard/api/instagramScheduledPosts';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import InstagramStudioTabs from './InstagramStudioTabs.vue';
 import InstagramDmPreview from './InstagramDmPreview.vue';
+import InstagramDmComposer from './InstagramDmComposer.vue';
 import InstagramMediaPreview from './InstagramMediaPreview.vue';
+
+const authFn = () => PostsAPI.imagekitAuth();
 
 const MAX_IMAGES = 10;
 const MATCH_TYPES = ['contains', 'exact', 'any'];
@@ -57,8 +60,10 @@ const blankForm = () => ({
     match_type: 'contains',
     keywords: '',
     dm_message: '',
-    dm_link: '',
-    dm_button_label: '',
+    dm_card_title: '',
+    dm_image_url: '',
+    dm_image_file_id: '',
+    dm_buttons: [],
     public_reply: '',
     once_per_user: true,
   },
@@ -262,8 +267,12 @@ function pendingAutomationPayload() {
     match_type: a.match_type,
     keywords: a.match_type === 'any' ? '' : a.keywords.trim(),
     dm_message: a.dm_message.trim(),
-    dm_link: a.dm_link.trim(),
-    dm_button_label: a.dm_button_label.trim(),
+    dm_card_title: (a.dm_card_title || '').trim(),
+    dm_image_url: a.dm_image_url || '',
+    dm_image_file_id: a.dm_image_file_id || '',
+    dm_buttons: (a.dm_buttons || [])
+      .filter(btn => btn.url?.trim())
+      .map(btn => ({ title: (btn.title || '').trim(), url: btn.url.trim() })),
     public_reply: a.public_reply.trim(),
     once_per_user: a.once_per_user,
   };
@@ -785,48 +794,11 @@ onMounted(() => {
                 />
               </div>
 
-              <!-- DM -->
-              <div class="flex flex-col gap-1.5">
-                <label class="text-xs font-medium text-n-slate-11">
-                  {{ t('INSTAGRAM_AUTOMATIONS.DM_MESSAGE') }}
-                </label>
-                <textarea
-                  v-model="form.automation.dm_message"
-                  rows="2"
-                  :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_MESSAGE_PH')"
-                  class="resize-none"
-                  :class="[INPUT_CLASS]"
-                />
-                <div class="flex gap-2">
-                  <input
-                    v-model="form.automation.dm_link"
-                    type="url"
-                    :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_LINK_PH')"
-                    class="flex-1"
-                    :class="[INPUT_CLASS]"
-                  />
-                  <input
-                    v-model="form.automation.dm_button_label"
-                    type="text"
-                    :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_BUTTON_PH')"
-                    class="w-40"
-                    :class="[INPUT_CLASS]"
-                  />
-                </div>
-              </div>
-
-              <!-- Resposta publica -->
-              <div class="flex flex-col gap-1.5">
-                <label class="text-xs font-medium text-n-slate-11">
-                  {{ t('INSTAGRAM_AUTOMATIONS.PUBLIC_REPLY') }}
-                </label>
-                <input
-                  v-model="form.automation.public_reply"
-                  type="text"
-                  :placeholder="t('INSTAGRAM_AUTOMATIONS.PUBLIC_REPLY_PH')"
-                  :class="INPUT_CLASS"
-                />
-              </div>
+              <!-- DM (imagem + titulo + mensagem + botoes + resposta publica) -->
+              <InstagramDmComposer
+                v-model="form.automation"
+                :auth-fn="authFn"
+              />
 
               <label
                 class="flex items-center gap-2 text-sm cursor-pointer text-n-slate-12"
@@ -884,8 +856,9 @@ onMounted(() => {
             :name="username"
             :public-reply="form.automation.public_reply"
             :dm-message="form.automation.dm_message"
-            :dm-link="form.automation.dm_link"
-            :dm-button-label="form.automation.dm_button_label"
+            :card-title="form.automation.dm_card_title"
+            :image="form.automation.dm_image_url"
+            :buttons="form.automation.dm_buttons"
           />
         </aside>
       </div>

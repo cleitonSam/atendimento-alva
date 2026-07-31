@@ -9,6 +9,9 @@ import AutomationsAPI from 'dashboard/api/instagramCommentAutomations';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import InstagramStudioTabs from './InstagramStudioTabs.vue';
 import InstagramDmPreview from './InstagramDmPreview.vue';
+import InstagramDmComposer from './InstagramDmComposer.vue';
+
+const authFn = () => AutomationsAPI.imagekitAuth();
 
 const { t } = useI18n();
 const store = useStore();
@@ -37,8 +40,10 @@ const blankForm = () => ({
   keywords: '',
   match_type: 'contains',
   dm_message: '',
-  dm_link: '',
-  dm_button_label: '',
+  dm_card_title: '',
+  dm_image_url: '',
+  dm_image_file_id: '',
+  dm_buttons: [],
   public_reply: '',
   once_per_user: true,
   enabled: true,
@@ -84,8 +89,12 @@ const openEdit = automation => {
     target: automation.media_id ? 'specific' : 'any',
     media_id: automation.media_id ?? '',
     keywords: automation.keywords ?? '',
-    dm_link: automation.dm_link ?? '',
-    dm_button_label: automation.dm_button_label ?? '',
+    dm_card_title: automation.dm_card_title ?? '',
+    dm_image_url: automation.dm_image_url ?? '',
+    dm_image_file_id: automation.dm_image_file_id ?? '',
+    dm_buttons: Array.isArray(automation.dm_buttons)
+      ? automation.dm_buttons.map(btn => ({ ...btn }))
+      : [],
     public_reply: automation.public_reply ?? '',
     starts_at: toLocalInput(automation.starts_at),
     ends_at: toLocalInput(automation.ends_at),
@@ -115,8 +124,12 @@ function payload() {
     keywords: f.match_type === 'any' ? '' : f.keywords.trim(),
     match_type: f.match_type,
     dm_message: f.dm_message.trim(),
-    dm_link: f.dm_link.trim(),
-    dm_button_label: f.dm_button_label.trim(),
+    dm_card_title: (f.dm_card_title || '').trim(),
+    dm_image_url: f.dm_image_url || '',
+    dm_image_file_id: f.dm_image_file_id || '',
+    dm_buttons: (f.dm_buttons || [])
+      .filter(btn => btn.url?.trim())
+      .map(btn => ({ title: (btn.title || '').trim(), url: btn.url.trim() })),
     public_reply: f.public_reply.trim(),
     once_per_user: f.once_per_user,
     enabled: f.enabled,
@@ -422,55 +435,16 @@ onMounted(() => {
               {{ t('INSTAGRAM_AUTOMATIONS.SECTION_REPLY') }}
             </span>
           </legend>
-          <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_13rem]">
-            <div class="flex flex-col gap-4">
-              <!-- DM -->
-              <div class="flex flex-col gap-1.5">
-                <label class="text-xs font-medium text-n-slate-11">
-                  {{ t('INSTAGRAM_AUTOMATIONS.DM_MESSAGE') }}
-                </label>
-                <textarea
-                  v-model="form.dm_message"
-                  rows="3"
-                  :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_MESSAGE_PH')"
-                  class="px-3 py-2 text-sm border rounded-lg resize-none bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
-                />
-                <div class="flex gap-2">
-                  <input
-                    v-model="form.dm_link"
-                    type="url"
-                    :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_LINK_PH')"
-                    class="flex-1 px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
-                  />
-                  <input
-                    v-model="form.dm_button_label"
-                    type="text"
-                    :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_BUTTON_PH')"
-                    class="w-40 px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
-                  />
-                </div>
-              </div>
-
-              <!-- Resposta publica -->
-              <div class="flex flex-col gap-1.5">
-                <label class="text-xs font-medium text-n-slate-11">
-                  {{ t('INSTAGRAM_AUTOMATIONS.PUBLIC_REPLY') }}
-                </label>
-                <input
-                  v-model="form.public_reply"
-                  type="text"
-                  :placeholder="t('INSTAGRAM_AUTOMATIONS.PUBLIC_REPLY_PH')"
-                  class="px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
-                />
-              </div>
-            </div>
+          <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_14rem]">
+            <InstagramDmComposer v-model="form" :auth-fn="authFn" />
             <div class="lg:sticky lg:top-1 h-fit">
               <InstagramDmPreview
                 :name="form.name"
                 :public-reply="form.public_reply"
                 :dm-message="form.dm_message"
-                :dm-link="form.dm_link"
-                :dm-button-label="form.dm_button_label"
+                :card-title="form.dm_card_title"
+                :image="form.dm_image_url"
+                :buttons="form.dm_buttons"
               />
             </div>
           </div>

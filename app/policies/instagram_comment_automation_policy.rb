@@ -18,4 +18,8 @@ class InstagramCommentAutomationPolicy < ApplicationPolicy
   def destroy?
     create?
   end
+
+  def imagekit_auth?
+    create?
+  end
 end

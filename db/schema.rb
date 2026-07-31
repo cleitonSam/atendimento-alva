@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_31_040000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_31_050000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1083,6 +1083,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_31_040000) do
     t.jsonb "handled_commenter_ids", default: [], null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "dm_image_url"
+    t.string "dm_image_file_id"
+    t.string "dm_card_title"
+    t.jsonb "dm_buttons", default: [], null: false
     t.index ["account_id", "media_id"], name: "index_instagram_comment_automations_on_account_id_and_media_id"
     t.index ["account_id"], name: "index_instagram_comment_automations_on_account_id"
     t.index ["inbox_id"], name: "index_instagram_comment_automations_on_inbox_id"

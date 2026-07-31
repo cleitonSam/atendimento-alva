@@ -316,7 +316,9 @@ Rails.application.routes.draw do
           resources :labels, only: [:index, :show, :create, :update, :destroy]
 
           resources :instagram_commented_posts, only: [:index, :show]
-          resources :instagram_comment_automations
+          resources :instagram_comment_automations do
+            get :imagekit_auth, on: :collection
+          end
           resources :instagram_scheduled_posts, only: [:index, :create, :destroy] do
             get :imagekit_auth, on: :collection
           end

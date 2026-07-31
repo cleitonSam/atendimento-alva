@@ -56,7 +56,9 @@ class Api::V1::Accounts::InstagramScheduledPostsController < Api::V1::Accounts::
     params.require(:instagram_scheduled_post).permit(
       :inbox_id, :caption, :scheduled_at, :post_type, :video_url, :video_file_id, :share_to_feed,
       image_urls: [], image_file_ids: [],
-      pending_automation: [:name, :keywords, :match_type, :dm_message, :dm_link, :dm_button_label, :public_reply, :once_per_user]
+      pending_automation: [:name, :keywords, :match_type, :dm_message, :dm_link, :dm_button_label,
+                           :dm_image_url, :dm_image_file_id, :dm_card_title, :public_reply, :once_per_user,
+                           { dm_buttons: [:title, :url] }]
     )
   end
 end

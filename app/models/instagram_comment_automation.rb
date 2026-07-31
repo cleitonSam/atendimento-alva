@@ -4,6 +4,9 @@
 #
 #  id                    :bigint           not null, primary key
 #  dm_button_label       :string
+#  dm_buttons            :jsonb            not null
+#  dm_card_title         :string
+#  dm_image_url          :string
 #  dm_link               :string
 #  dm_message            :text             not null
 #  enabled               :boolean          default(TRUE), not null
@@ -19,6 +22,7 @@
 #  created_at            :datetime         not null
 #  updated_at            :datetime         not null
 #  account_id            :bigint           not null
+#  dm_image_file_id      :string
 #  inbox_id              :bigint           not null
 #  media_id              :string
 #
@@ -41,14 +45,38 @@ class InstagramCommentAutomation < ApplicationRecord
   belongs_to :inbox
 
   MATCH_TYPES = %w[contains exact any].freeze
+  MAX_BUTTONS = 3           # limite do Instagram (button/generic template)
+  BUTTON_TITLE_LIMIT = 20   # limite do título do botão no Instagram
+  CARD_TEXT_LIMIT = 80      # título/subtítulo do generic template
+
+  before_validation :normalize_dm_buttons
 
   validates :name, presence: true
   validates :dm_message, presence: true
   validates :match_type, inclusion: { in: MATCH_TYPES }
   validate :keywords_present_unless_any
   validate :inbox_belongs_to_account
+  validate :dm_buttons_shape
+  validate :card_title_present_with_image
 
   scope :enabled, -> { where(enabled: true) }
+
+  # Card = tem imagem de capa (vira generic template na DM).
+  def dm_card?
+    dm_image_url.present?
+  end
+
+  # Botões normalizados pro payload do Instagram: [{type, url, title}], no máx 3.
+  # Fallback: automações antigas (sem dm_buttons) usam o par legado dm_link/dm_button_label.
+  def dm_buttons_for_payload
+    source = dm_buttons.presence || legacy_button
+    Array(source).filter_map do |btn|
+      url = btn['url'].to_s.strip
+      next if url.blank?
+
+      { type: 'web_url', url: url, title: (btn['title'].presence || 'Abrir').to_s[0, BUTTON_TITLE_LIMIT] }
+    end.first(MAX_BUTTONS)
+  end
 
   def keyword_list
     keywords.to_s.split(',').map { |keyword| normalize(keyword) }.reject(&:blank?)
@@ -107,6 +135,32 @@ class InstagramCommentAutomation < ApplicationRecord
   end
 
   private
+
+  def legacy_button
+    dm_link.present? ? [{ 'url' => dm_link, 'title' => dm_button_label }] : []
+  end
+
+  # Aceita array de {title,url}; joga fora entradas sem url; corta em MAX_BUTTONS.
+  def normalize_dm_buttons
+    self.dm_buttons = Array(dm_buttons).filter_map do |btn|
+      btn = btn.to_h.stringify_keys if btn.respond_to?(:to_h)
+      url = btn['url'].to_s.strip
+      next if url.blank?
+
+      { 'url' => url, 'title' => btn['title'].to_s.strip }
+    end.first(MAX_BUTTONS)
+  end
+
+  def dm_buttons_shape
+    Array(dm_buttons).each do |btn|
+      errors.add(:dm_buttons, 'link inválido (use http/https)') unless btn['url'].to_s.match?(%r{\Ahttps?://}i)
+    end
+  end
+
+  # Generic template exige um título; sem imagem não há card (usa button/text template).
+  def card_title_present_with_image
+    errors.add(:dm_card_title, 'informe um título para o card') if dm_card? && dm_card_title.blank?
+  end
 
   def normalize(text)
     text.to_s.downcase.strip.gsub(/\s+/, ' ')

@@ -18,6 +18,7 @@
       "EMPTY": "Your DM shows up here",
       "MEDIA_EMPTY": "Your media shows up here",
       "CAPTION_EMPTY": "your caption…",
+      "CARD_TITLE_EMPTY": "Card title",
       "REELS": "Reels",
       "YOUR_STORY": "Your story",
       "STORY_REPLY": "Send message"
@@ -60,6 +61,26 @@
     "CANCEL": "Cancel",
     "SCHEDULE_BTN": "Schedule",
     "PUBLISH_BTN": "Publish"
+  },
+  "INSTAGRAM_DM": {
+    "IMAGE": "Cover image (optional)",
+    "IMAGE_HINT": "Add a cover to turn the DM into a rich card (1.91:1).",
+    "ADD_IMAGE": "Cover",
+    "REMOVE_IMAGE": "Remove image",
+    "CARD_TITLE": "Card title",
+    "CARD_TITLE_PH": "e.g. LumiPage · free audit",
+    "MESSAGE": "Message",
+    "MESSAGE_PH": "Hey! Here's the link…",
+    "SUBTITLE": "Subtitle",
+    "SUBTITLE_HINT": "With a cover, the message becomes the card subtitle (short).",
+    "BUTTONS": "Buttons (up to 3)",
+    "ADD_BUTTON": "Add button",
+    "REMOVE_BUTTON": "Remove button",
+    "BUTTON_LABEL_PH": "Label",
+    "BUTTON_URL_PH": "https://…",
+    "PUBLIC_REPLY": "Public reply on the comment (optional)",
+    "PUBLIC_REPLY_PH": "e.g. Sent you a DM! 📩",
+    "UPLOAD_ERROR": "Couldn't upload the image."
   },
   "INSTAGRAM_AUTOMATIONS": {
     "TITLE": "Comment automations",

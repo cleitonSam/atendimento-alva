@@ -18,6 +18,7 @@
       "EMPTY": "Sua DM aparece aqui",
       "MEDIA_EMPTY": "Sua mídia aparece aqui",
       "CAPTION_EMPTY": "sua legenda…",
+      "CARD_TITLE_EMPTY": "Título do card",
       "REELS": "Reels",
       "YOUR_STORY": "Seu story",
       "STORY_REPLY": "Enviar mensagem"
@@ -60,6 +61,26 @@
     "CANCEL": "Cancelar",
     "SCHEDULE_BTN": "Agendar",
     "PUBLISH_BTN": "Publicar"
+  },
+  "INSTAGRAM_DM": {
+    "IMAGE": "Imagem de capa (opcional)",
+    "IMAGE_HINT": "Adicione uma capa pra DM virar um card rico (proporção 1.91:1).",
+    "ADD_IMAGE": "Capa",
+    "REMOVE_IMAGE": "Remover imagem",
+    "CARD_TITLE": "Título do card",
+    "CARD_TITLE_PH": "ex.: LumiPage · auditoria grátis",
+    "MESSAGE": "Mensagem",
+    "MESSAGE_PH": "Opa! Aqui vai o link…",
+    "SUBTITLE": "Subtítulo",
+    "SUBTITLE_HINT": "Com capa, a mensagem vira o subtítulo do card (curtinho).",
+    "BUTTONS": "Botões (até 3)",
+    "ADD_BUTTON": "Adicionar botão",
+    "REMOVE_BUTTON": "Remover botão",
+    "BUTTON_LABEL_PH": "Rótulo",
+    "BUTTON_URL_PH": "https://…",
+    "PUBLIC_REPLY": "Resposta pública no comentário (opcional)",
+    "PUBLIC_REPLY_PH": "ex.: Te mandei no direct! 📩",
+    "UPLOAD_ERROR": "Não foi possível subir a imagem."
   },
   "INSTAGRAM_AUTOMATIONS": {
     "TITLE": "Automações de comentário",
