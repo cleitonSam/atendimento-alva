@@ -25,6 +25,8 @@ class Instagram::CommentBuilder
       build_conversation
       build_message
     end
+    # Automacao comentario->DM (palavra-chave -> DM automatica), em background.
+    Instagram::CommentAutomationJob.perform_later(@message.id) if @message&.persisted?
     @message
   rescue StandardError => e
     ChatwootExceptionTracker.new(e, account: @inbox&.account).capture_exception

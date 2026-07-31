@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_30_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_31_000000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1064,6 +1064,30 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_30_120000) do
     t.index ["portal_id"], name: "index_inboxes_on_portal_id"
   end
 
+  create_table "instagram_comment_automations", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "inbox_id", null: false
+    t.string "name", null: false
+    t.string "media_id"
+    t.string "keywords"
+    t.string "match_type", default: "contains", null: false
+    t.text "dm_message", null: false
+    t.string "dm_link"
+    t.string "dm_button_label"
+    t.text "public_reply"
+    t.boolean "enabled", default: true, null: false
+    t.boolean "once_per_user", default: true, null: false
+    t.datetime "starts_at"
+    t.datetime "ends_at"
+    t.integer "sent_count", default: 0, null: false
+    t.jsonb "handled_commenter_ids", default: [], null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "media_id"], name: "index_instagram_comment_automations_on_account_id_and_media_id"
+    t.index ["account_id"], name: "index_instagram_comment_automations_on_account_id"
+    t.index ["inbox_id"], name: "index_instagram_comment_automations_on_inbox_id"
+  end
+
   create_table "installation_configs", force: :cascade do |t|
     t.string "name", null: false
     t.jsonb "serialized_value", default: {}, null: false
@@ -1502,6 +1526,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_30_120000) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "inboxes", "portals"
+  add_foreign_key "instagram_comment_automations", "accounts"
+  add_foreign_key "instagram_comment_automations", "inboxes"
   add_foreign_key "user_sessions", "users"
   create_trigger("accounts_after_insert_row_tr", :generated => true, :compatibility => 1).
       on("accounts").

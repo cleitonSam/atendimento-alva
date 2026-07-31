@@ -316,6 +316,7 @@ Rails.application.routes.draw do
           resources :labels, only: [:index, :show, :create, :update, :destroy]
 
           resources :instagram_commented_posts, only: [:index, :show]
+          resources :instagram_comment_automations
 
           resources :notifications, only: [:index, :update, :destroy] do
             collection do
