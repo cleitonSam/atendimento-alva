@@ -266,6 +266,12 @@ onMounted(() => {
                 alt=""
                 class="object-cover w-full h-full"
               />
+              <div
+                v-else
+                class="flex items-center justify-center w-full h-full text-n-slate-8"
+              >
+                <span class="i-lucide-image size-6" />
+              </div>
             </div>
             <div class="flex flex-col min-w-0 gap-1 flex-1">
               <div class="flex items-center gap-2">

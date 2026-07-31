@@ -19,6 +19,7 @@ class Instagram::PublishPostService
     media_id = create_and_publish
     if media_id.present?
       @post.mark_published!(media_id, fetch_permalink(media_id))
+      cleanup_imagekit
     else
       @post.mark_failed!(@error || 'falha ao publicar')
     end
@@ -28,6 +29,15 @@ class Instagram::PublishPostService
   end
 
   private
+
+  # Publicou -> o Instagram ja hospeda a propria copia, entao apaga do ImageKit pra
+  # economizar storage e limpa image_urls/file_ids (nao ha mais thumbnail nem o que
+  # re-deletar no destroy). So no sucesso; se falhar, mantem as imagens pro retry.
+  def cleanup_imagekit
+    file_ids = @post.image_file_ids
+    Imagekit::DeleteFilesJob.perform_later(file_ids) if file_ids.present?
+    @post.update_columns(image_urls: [], image_file_ids: []) # rubocop:disable Rails/SkipsModelValidations
+  end
 
   def create_and_publish
     creation_id = @post.carousel? ? build_carousel : build_single
