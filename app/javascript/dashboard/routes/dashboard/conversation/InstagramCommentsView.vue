@@ -178,6 +178,7 @@ async function removeComment(comment) {
     useAlert(t('INSTAGRAM_COMMENTS.DELETED_OK'));
   } catch (error) {
     useAlert(moderationError(error));
+  } finally {
     busyIds.delete(comment.comment_id);
   }
 }
@@ -211,7 +212,7 @@ watch(
         :aria-label="t('INSTAGRAM_COMMENTS.BACK')"
         @click="goToGallery"
       >
-        <span class="i-lucide-arrow-left size-4.5" />
+        <span class="i-lucide-arrow-left size-5" />
       </button>
       <span class="i-lucide-message-square-text size-5 text-n-brand" />
       <h1 class="text-lg font-semibold text-n-slate-12">

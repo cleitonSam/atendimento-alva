@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, watch, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useStore } from 'vuex';
 import { useMapGetter } from 'dashboard/composables/store';
@@ -40,6 +40,11 @@ const blankForm = () => ({
   ends_at: '',
 });
 const form = ref(blankForm());
+
+// Preenche o inbox unico automaticamente se os inboxes carregarem apos o form montar.
+watch(igInboxes, list => {
+  if (!form.value.inbox_id && list.length) form.value.inbox_id = list[0].id;
+});
 
 async function load() {
   loading.value = true;
@@ -109,8 +114,9 @@ function payload() {
     public_reply: f.public_reply.trim(),
     once_per_user: f.once_per_user,
     enabled: f.enabled,
-    starts_at: f.starts_at || null,
-    ends_at: f.ends_at || null,
+    // datetime-local e hora LOCAL -> converte pro instante UTC (backend le naive como UTC).
+    starts_at: f.starts_at ? new Date(f.starts_at).toISOString() : null,
+    ends_at: f.ends_at ? new Date(f.ends_at).toISOString() : null,
   };
 }
 

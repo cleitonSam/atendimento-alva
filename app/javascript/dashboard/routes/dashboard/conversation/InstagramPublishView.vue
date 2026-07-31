@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, reactive, watch, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useStore } from 'vuex';
 import { useMapGetter } from 'dashboard/composables/store';
@@ -30,6 +30,11 @@ const blankForm = () => ({
   scheduled_at: '',
 });
 const form = ref(blankForm());
+
+// Se os inboxes carregam DEPOIS do form montar, preenche o inbox unico automaticamente.
+watch(igInboxes, list => {
+  if (!form.value.inbox_id && list.length) form.value.inbox_id = list[0].id;
+});
 
 async function load() {
   loading.value = true;
@@ -71,7 +76,9 @@ async function onFiles(event) {
     const file = files[i];
     // eslint-disable-next-line no-await-in-loop
     const preview = await readAsDataUrl(file);
-    const image = { preview, url: '', uploading: true };
+    // reactive() garante que as escritas (image.url/uploading) disparem o render e
+    // que o filtro por identidade (img !== image) funcione (proxy === proxy).
+    const image = reactive({ preview, url: '', uploading: true });
     form.value.images.push(image);
     try {
       // eslint-disable-next-line no-await-in-loop
@@ -115,8 +122,12 @@ async function save() {
         inbox_id: form.value.inbox_id,
         caption: form.value.caption.trim(),
         image_urls: uploadedUrls.value,
+        // datetime-local e hora LOCAL; converte pro instante UTC certo (o backend
+        // interpreta string naive como UTC).
         scheduled_at:
-          form.value.schedule === 'later' ? form.value.scheduled_at : null,
+          form.value.schedule === 'later'
+            ? new Date(form.value.scheduled_at).toISOString()
+            : null,
       },
     });
     useAlert(
@@ -327,7 +338,9 @@ onMounted(() => {
               </div>
               <button
                 type="button"
-                class="absolute flex items-center justify-center rounded-full top-1 right-1 size-5 bg-n-solid-1/90 text-n-slate-12"
+                :disabled="image.uploading"
+                :aria-label="t('INSTAGRAM_PUBLISH.REMOVE_IMAGE')"
+                class="absolute flex items-center justify-center rounded-full top-1 right-1 size-5 bg-n-solid-1/90 text-n-slate-12 disabled:opacity-50"
                 @click="removeImage(image)"
               >
                 <span class="i-lucide-x size-3" />
