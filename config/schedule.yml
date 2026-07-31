@@ -26,6 +26,12 @@ trigger_imap_email_inboxes_job:
   class: 'Inboxes::FetchImapEmailInboxesJob'
   queue: scheduled_jobs
 
+# executed At every minute — publica posts do Instagram agendados que venceram
+instagram_publish_due_posts_job:
+  cron: '*/1 * * * *'
+  class: 'Instagram::PublishDuePostsJob'
+  queue: scheduled_jobs
+
 # executed daily at 2230 UTC
 # which is our lowest traffic time
 remove_stale_contact_inboxes_job.rb:

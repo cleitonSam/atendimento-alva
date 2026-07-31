@@ -317,6 +317,9 @@ Rails.application.routes.draw do
 
           resources :instagram_commented_posts, only: [:index, :show]
           resources :instagram_comment_automations
+          resources :instagram_scheduled_posts, only: [:index, :create, :destroy] do
+            post :upload, on: :collection
+          end
 
           resources :notifications, only: [:index, :update, :destroy] do
             collection do
