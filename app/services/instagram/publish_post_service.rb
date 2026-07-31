@@ -1,10 +1,16 @@
 # Publica uma InstagramScheduledPost na Content Publishing API (Instagram API with
-# Instagram login). Imagem unica -> 1 container + publish. Carrossel -> 1 item container
-# por imagem (is_carousel_item) + 1 container CAROUSEL(children) + publish. Espera o
-# container ficar FINISHED antes de publicar; ao final marca published/failed + permalink.
+# Instagram login). Por formato:
+#   - post imagem unica -> 1 container + publish
+#   - post carrossel    -> 1 item container por imagem (is_carousel_item) + 1 container
+#                          CAROUSEL(children) + publish
+#   - reels             -> 1 container media_type=REELS(video_url) + publish
+#   - story             -> 1 container media_type=STORIES(image_url|video_url) + publish
+# Espera o container ficar FINISHED antes de publicar (video demora mais); ao final
+# marca published/failed + permalink e limpa as midias do ImageKit.
 class Instagram::PublishPostService
   GRAPH_BASE = 'https://graph.instagram.com/v22.0'.freeze
-  STATUS_MAX_TRIES = 8
+  STATUS_MAX_TRIES = 8       # imagem processa rapido
+  STATUS_MAX_TRIES_VIDEO = 30 # video (reels/story) demora bem mais pra ficar FINISHED
   STATUS_INTERVAL = 2 # segundos entre checagens do container
 
   def initialize(post)
@@ -14,7 +20,6 @@ class Instagram::PublishPostService
 
   def perform
     return @post.mark_failed!('canal sem token') if access_token.blank?
-    return @post.mark_failed!('sem imagens') if @post.image_urls.blank?
 
     media_id = create_and_publish
     if media_id.present?
@@ -32,19 +37,22 @@ class Instagram::PublishPostService
   private
 
   # Publicou -> o Instagram ja hospeda a propria copia, entao apaga do ImageKit pra
-  # economizar storage e limpa image_urls/file_ids (nao ha mais thumbnail nem o que
-  # re-deletar no destroy). So no sucesso; se falhar, mantem as imagens pro retry.
+  # economizar storage e limpa urls/file_ids (nao ha mais o que re-deletar no destroy).
+  # So no sucesso; se falhar, mantem as midias pro retry.
   def cleanup_imagekit
-    file_ids = @post.image_file_ids
+    file_ids = @post.imagekit_file_ids
     Imagekit::DeleteFilesJob.perform_later(file_ids) if file_ids.present?
-    @post.update_columns(image_urls: [], image_file_ids: []) # rubocop:disable Rails/SkipsModelValidations
+    # rubocop:disable Rails/SkipsModelValidations
+    @post.update_columns(image_urls: [], image_file_ids: [], video_url: nil, video_file_id: nil)
+    # rubocop:enable Rails/SkipsModelValidations
   end
 
   # Unifica publicar + automatizar: se o post trouxe uma automacao pendente, cria a
   # InstagramCommentAutomation JA com o media_id publicado (sem o usuario colar id).
+  # Story nao suporta automacao de comentario.
   def create_pending_automation(media_id)
     cfg = @post.pending_automation
-    return if cfg.blank?
+    return if cfg.blank? || !@post.supports_automation?
 
     @post.account.instagram_comment_automations.create!(
       inbox: @post.inbox,
@@ -64,11 +72,23 @@ class Instagram::PublishPostService
   end
 
   def create_and_publish
-    creation_id = @post.carousel? ? build_carousel : build_single
+    creation_id = build_container
     return nil if creation_id.blank?
     return nil unless wait_until_ready(creation_id)
 
     publish(creation_id)
+  end
+
+  def build_container
+    if @post.reels?
+      build_reels
+    elsif @post.story?
+      build_story
+    elsif @post.carousel?
+      build_carousel
+    else
+      build_single
+    end
   end
 
   def ig_id
@@ -90,6 +110,22 @@ class Instagram::PublishPostService
     create_container(media_type: 'CAROUSEL', caption: @post.caption, children: children.join(','))
   end
 
+  def build_reels
+    create_container(media_type: 'REELS', video_url: @post.video_url, caption: @post.caption,
+                     share_to_feed: @post.share_to_feed)
+  end
+
+  # Story: imagem OU video; nao leva legenda.
+  def build_story
+    params = { media_type: 'STORIES' }
+    if @post.video_url.present?
+      params[:video_url] = @post.video_url
+    else
+      params[:image_url] = @post.image_urls.first
+    end
+    create_container(params)
+  end
+
   # POST /{ig_id}/media -> devolve o id do container (creation_id)
   def create_container(params)
     response = post("#{GRAPH_BASE}/#{ig_id}/media", params)
@@ -99,14 +135,15 @@ class Instagram::PublishPostService
   end
 
   def wait_until_ready(creation_id)
-    STATUS_MAX_TRIES.times do
+    max_tries = @post.video? ? STATUS_MAX_TRIES_VIDEO : STATUS_MAX_TRIES
+    max_tries.times do
       status = container_status(creation_id)
       return true if status == 'FINISHED'
       break if %w[ERROR EXPIRED].include?(status)
 
       sleep STATUS_INTERVAL
     end
-    @error ||= 'container nao ficou FINISHED'
+    @error ||= 'processamento da mídia não concluído a tempo'
     false
   end
 

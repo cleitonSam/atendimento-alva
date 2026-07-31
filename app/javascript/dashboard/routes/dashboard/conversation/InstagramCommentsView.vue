@@ -262,204 +262,222 @@ watch(
         >
           <Spinner />
         </div>
-        <div v-else class="max-w-3xl p-6 mx-auto">
-          <!-- Cabecalho do post -->
-          <div
-            class="flex gap-4 p-4 mb-6 border rounded-xl border-n-weak bg-n-solid-1"
-          >
+        <div
+          v-else
+          class="grid gap-8 p-6 mx-auto max-w-5xl lg:grid-cols-[18rem_minmax(0,1fr)]"
+        >
+          <!-- Post (fixo) -->
+          <aside class="lg:sticky lg:top-0 h-fit">
             <div
-              class="flex-shrink-0 overflow-hidden rounded-lg size-24 bg-n-alpha-2"
+              class="overflow-hidden border rounded-2xl border-n-weak bg-n-solid-1"
             >
-              <img
-                v-if="post?.image_url && !postImageFailed"
-                :src="post.image_url"
-                :alt="post?.caption || t('INSTAGRAM_COMMENTS.POST')"
-                class="object-cover w-full h-full"
-                @error="postImageFailed = true"
-              />
-              <div
-                v-else
-                class="flex items-center justify-center w-full h-full text-n-slate-8"
-              >
-                <span class="i-lucide-image size-8" />
-              </div>
-            </div>
-            <div class="flex flex-col min-w-0 gap-1">
-              <span
-                class="text-xs font-medium tracking-wide uppercase text-n-slate-10"
-              >
-                {{ t('INSTAGRAM_COMMENTS.POST') }}
-              </span>
-              <p
-                v-if="post?.caption"
-                class="text-sm text-n-slate-12 line-clamp-3"
-              >
-                {{ post.caption }}
-              </p>
-              <a
-                v-if="post?.permalink"
-                :href="post.permalink"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="mt-1 text-xs font-medium text-n-brand hover:underline w-fit"
-              >
-                {{ t('INSTAGRAM_COMMENTS.VIEW_ON_INSTAGRAM') }}
-              </a>
-            </div>
-          </div>
-
-          <!-- Thread de comentarios -->
-          <h2 class="mb-3 text-sm font-semibold text-n-slate-11">
-            {{
-              t('INSTAGRAM_COMMENTS.COMMENT_COUNT', { count: comments.length })
-            }}
-          </h2>
-          <ul class="flex flex-col gap-3">
-            <li
-              v-for="comment in threadedComments"
-              :key="comment.comment_id || comment.created_at"
-              class="p-3 border rounded-xl border-n-weak bg-n-solid-1"
-            >
-              <div class="flex gap-3">
-                <!-- Iniciais em vez de carregar o avatar (a representacao do ActiveStorage
-                     da 500 quando o storage nao e compartilhado web/worker) -->
-                <span
-                  class="flex items-center justify-center flex-shrink-0 text-xs font-semibold rounded-full size-8 bg-n-alpha-2 text-n-slate-11"
+              <div class="relative aspect-square bg-n-alpha-2">
+                <img
+                  v-if="post?.image_url && !postImageFailed"
+                  :src="post.image_url"
+                  :alt="post?.caption || t('INSTAGRAM_COMMENTS.POST')"
+                  class="object-cover w-full h-full"
+                  @error="postImageFailed = true"
+                />
+                <div
+                  v-else
+                  class="flex flex-col items-center justify-center w-full h-full gap-2 text-n-slate-8 bg-gradient-to-br from-n-alpha-2 to-n-alpha-1"
                 >
-                  {{ initials(comment.author?.name) }}
-                </span>
-                <div class="flex flex-col min-w-0 gap-0.5 flex-1">
-                  <div class="flex items-center gap-2">
-                    <span class="text-sm font-medium truncate text-n-slate-12">
-                      {{
-                        comment.author?.name || t('INSTAGRAM_COMMENTS.UNKNOWN')
-                      }}
-                    </span>
-                    <span class="text-xs text-n-slate-10">
-                      {{
-                        shortTimestamp(dynamicTime(comment.created_at), true)
-                      }}
-                    </span>
-                  </div>
-                  <p class="text-sm break-words text-n-slate-12">
-                    {{ comment.text }}
-                  </p>
-                  <div class="flex items-center gap-3 mt-1">
-                    <button
-                      type="button"
-                      class="text-xs font-medium text-n-brand hover:underline"
-                      @click="startReply(comment)"
-                    >
-                      {{ t('INSTAGRAM_COMMENTS.REPLY') }}
-                    </button>
-                    <button
-                      type="button"
-                      :disabled="busyIds.has(comment.comment_id)"
-                      class="text-xs font-medium text-n-slate-11 hover:text-n-slate-12 disabled:opacity-50"
-                      @click="toggleHide(comment)"
-                    >
-                      {{
-                        hiddenIds.has(comment.comment_id)
-                          ? t('INSTAGRAM_COMMENTS.UNHIDE')
-                          : t('INSTAGRAM_COMMENTS.HIDE')
-                      }}
-                    </button>
-                    <button
-                      type="button"
-                      :disabled="busyIds.has(comment.comment_id)"
-                      class="text-xs font-medium text-n-ruby-9 hover:text-n-ruby-10 disabled:opacity-50"
-                      @click="removeComment(comment)"
-                    >
-                      {{ t('INSTAGRAM_COMMENTS.DELETE') }}
-                    </button>
-                    <span
-                      v-if="hiddenIds.has(comment.comment_id)"
-                      class="px-1.5 py-0.5 text-[10px] font-medium rounded bg-n-alpha-2 text-n-slate-11"
-                    >
-                      {{ t('INSTAGRAM_COMMENTS.HIDDEN_BADGE') }}
-                    </span>
-                  </div>
-
-                  <!-- Compositor de resposta -->
-                  <div
-                    v-if="replyingTo === comment.comment_id"
-                    class="flex flex-col gap-2 p-3 mt-2 rounded-lg bg-n-alpha-1"
-                  >
-                    <div class="flex gap-1">
-                      <button
-                        v-for="mode in REPLY_MODES"
-                        :key="mode"
-                        type="button"
-                        class="px-2.5 py-1 text-xs font-medium rounded-md transition"
-                        :class="
-                          replyMode === mode
-                            ? 'bg-n-brand text-n-brand-text'
-                            : 'bg-n-alpha-2 text-n-slate-11 hover:text-n-slate-12'
-                        "
-                        @click="replyMode = mode"
-                      >
-                        {{ t(`INSTAGRAM_COMMENTS.MODE.${mode.toUpperCase()}`) }}
-                      </button>
-                    </div>
-                    <textarea
-                      v-model="replyText"
-                      rows="2"
-                      :placeholder="t('INSTAGRAM_COMMENTS.REPLY_PLACEHOLDER')"
-                      class="w-full px-3 py-2 text-sm border rounded-lg resize-none bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
-                    />
-                    <div class="flex items-center justify-end gap-2">
-                      <button
-                        type="button"
-                        class="px-3 py-1.5 text-xs font-medium rounded-md text-n-slate-11 hover:text-n-slate-12"
-                        @click="resetReply"
-                      >
-                        {{ t('INSTAGRAM_COMMENTS.CANCEL') }}
-                      </button>
-                      <button
-                        type="button"
-                        :disabled="!replyText.trim() || sendingReply"
-                        class="px-3 py-1.5 text-xs font-semibold rounded-md bg-n-brand text-n-brand-text disabled:opacity-50"
-                        @click="sendReply(comment)"
-                      >
-                        {{ t('INSTAGRAM_COMMENTS.SEND') }}
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Respostas aninhadas -->
-                  <ul
-                    v-if="comment.replies.length"
-                    class="flex flex-col gap-2 pl-3 mt-2 border-l border-n-weak"
-                  >
-                    <li
-                      v-for="reply in comment.replies"
-                      :key="reply.comment_id || reply.created_at"
-                      class="flex flex-col gap-0.5"
-                    >
-                      <div class="flex items-center gap-2">
-                        <span
-                          class="text-xs font-medium truncate text-n-slate-12"
-                        >
-                          {{
-                            reply.author?.name ||
-                            t('INSTAGRAM_COMMENTS.UNKNOWN')
-                          }}
-                        </span>
-                        <span class="text-xs text-n-slate-10">
-                          {{
-                            shortTimestamp(dynamicTime(reply.created_at), true)
-                          }}
-                        </span>
-                      </div>
-                      <p class="text-sm break-words text-n-slate-12">
-                        {{ reply.text }}
-                      </p>
-                    </li>
-                  </ul>
+                  <span class="i-lucide-image size-9" />
+                  <span class="text-[11px] text-n-slate-9">
+                    {{ t('INSTAGRAM_COMMENTS.POST') }}
+                  </span>
                 </div>
               </div>
-            </li>
-          </ul>
+              <div class="flex flex-col gap-2 p-4">
+                <span
+                  class="text-[10px] font-semibold tracking-wide uppercase text-n-slate-10"
+                >
+                  {{ t('INSTAGRAM_COMMENTS.POST') }}
+                </span>
+                <p
+                  v-if="post?.caption"
+                  class="text-sm text-n-slate-12 line-clamp-4"
+                >
+                  {{ post.caption }}
+                </p>
+                <a
+                  v-if="post?.permalink"
+                  :href="post.permalink"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-xs font-medium text-n-brand hover:underline w-fit"
+                >
+                  {{ t('INSTAGRAM_COMMENTS.VIEW_ON_INSTAGRAM') }}
+                </a>
+              </div>
+            </div>
+          </aside>
+
+          <!-- Thread de comentarios -->
+          <div class="flex flex-col min-w-0">
+            <h2 class="mb-3 text-sm font-semibold text-n-slate-11">
+              {{
+                t('INSTAGRAM_COMMENTS.COMMENT_COUNT', {
+                  count: comments.length,
+                })
+              }}
+            </h2>
+            <ul class="flex flex-col gap-3">
+              <li
+                v-for="comment in threadedComments"
+                :key="comment.comment_id || comment.created_at"
+                class="p-3 border rounded-xl border-n-weak bg-n-solid-1"
+              >
+                <div class="flex gap-3">
+                  <!-- Iniciais em vez de carregar o avatar (a representacao do ActiveStorage
+                     da 500 quando o storage nao e compartilhado web/worker) -->
+                  <span
+                    class="flex items-center justify-center flex-shrink-0 text-xs font-semibold rounded-full size-8 bg-n-alpha-2 text-n-slate-11"
+                  >
+                    {{ initials(comment.author?.name) }}
+                  </span>
+                  <div class="flex flex-col min-w-0 gap-0.5 flex-1">
+                    <div class="flex items-center gap-2">
+                      <span
+                        class="text-sm font-medium truncate text-n-slate-12"
+                      >
+                        {{
+                          comment.author?.name ||
+                          t('INSTAGRAM_COMMENTS.UNKNOWN')
+                        }}
+                      </span>
+                      <span class="text-xs text-n-slate-10">
+                        {{
+                          shortTimestamp(dynamicTime(comment.created_at), true)
+                        }}
+                      </span>
+                    </div>
+                    <p class="text-sm break-words text-n-slate-12">
+                      {{ comment.text }}
+                    </p>
+                    <div class="flex items-center gap-3 mt-1">
+                      <button
+                        type="button"
+                        class="text-xs font-medium text-n-brand hover:underline"
+                        @click="startReply(comment)"
+                      >
+                        {{ t('INSTAGRAM_COMMENTS.REPLY') }}
+                      </button>
+                      <button
+                        type="button"
+                        :disabled="busyIds.has(comment.comment_id)"
+                        class="text-xs font-medium text-n-slate-11 hover:text-n-slate-12 disabled:opacity-50"
+                        @click="toggleHide(comment)"
+                      >
+                        {{
+                          hiddenIds.has(comment.comment_id)
+                            ? t('INSTAGRAM_COMMENTS.UNHIDE')
+                            : t('INSTAGRAM_COMMENTS.HIDE')
+                        }}
+                      </button>
+                      <button
+                        type="button"
+                        :disabled="busyIds.has(comment.comment_id)"
+                        class="text-xs font-medium text-n-ruby-9 hover:text-n-ruby-10 disabled:opacity-50"
+                        @click="removeComment(comment)"
+                      >
+                        {{ t('INSTAGRAM_COMMENTS.DELETE') }}
+                      </button>
+                      <span
+                        v-if="hiddenIds.has(comment.comment_id)"
+                        class="px-1.5 py-0.5 text-[10px] font-medium rounded bg-n-alpha-2 text-n-slate-11"
+                      >
+                        {{ t('INSTAGRAM_COMMENTS.HIDDEN_BADGE') }}
+                      </span>
+                    </div>
+
+                    <!-- Compositor de resposta -->
+                    <div
+                      v-if="replyingTo === comment.comment_id"
+                      class="flex flex-col gap-2 p-3 mt-2 rounded-lg bg-n-alpha-1"
+                    >
+                      <div class="flex gap-1">
+                        <button
+                          v-for="mode in REPLY_MODES"
+                          :key="mode"
+                          type="button"
+                          class="px-2.5 py-1 text-xs font-medium rounded-md transition"
+                          :class="
+                            replyMode === mode
+                              ? 'bg-n-brand text-n-brand-text'
+                              : 'bg-n-alpha-2 text-n-slate-11 hover:text-n-slate-12'
+                          "
+                          @click="replyMode = mode"
+                        >
+                          {{
+                            t(`INSTAGRAM_COMMENTS.MODE.${mode.toUpperCase()}`)
+                          }}
+                        </button>
+                      </div>
+                      <textarea
+                        v-model="replyText"
+                        rows="2"
+                        :placeholder="t('INSTAGRAM_COMMENTS.REPLY_PLACEHOLDER')"
+                        class="w-full px-3 py-2 text-sm border rounded-lg resize-none bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
+                      />
+                      <div class="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          class="px-3 py-1.5 text-xs font-medium rounded-md text-n-slate-11 hover:text-n-slate-12"
+                          @click="resetReply"
+                        >
+                          {{ t('INSTAGRAM_COMMENTS.CANCEL') }}
+                        </button>
+                        <button
+                          type="button"
+                          :disabled="!replyText.trim() || sendingReply"
+                          class="px-3 py-1.5 text-xs font-semibold rounded-md bg-n-brand text-n-brand-text disabled:opacity-50"
+                          @click="sendReply(comment)"
+                        >
+                          {{ t('INSTAGRAM_COMMENTS.SEND') }}
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Respostas aninhadas -->
+                    <ul
+                      v-if="comment.replies.length"
+                      class="flex flex-col gap-2 pl-3 mt-2 border-l border-n-weak"
+                    >
+                      <li
+                        v-for="reply in comment.replies"
+                        :key="reply.comment_id || reply.created_at"
+                        class="flex flex-col gap-0.5"
+                      >
+                        <div class="flex items-center gap-2">
+                          <span
+                            class="text-xs font-medium truncate text-n-slate-12"
+                          >
+                            {{
+                              reply.author?.name ||
+                              t('INSTAGRAM_COMMENTS.UNKNOWN')
+                            }}
+                          </span>
+                          <span class="text-xs text-n-slate-10">
+                            {{
+                              shortTimestamp(
+                                dynamicTime(reply.created_at),
+                                true
+                              )
+                            }}
+                          </span>
+                        </div>
+                        <p class="text-sm break-words text-n-slate-12">
+                          {{ reply.text }}
+                        </p>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </div>
         </div>
       </template>
     </div>

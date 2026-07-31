@@ -2,14 +2,25 @@
   "INSTAGRAM_PUBLISH": {
     "TITLE": "Publish",
     "NEW": "New post",
-    "SECTION_MEDIA": "Post",
+    "SECTION_MEDIA": "Media",
     "SECTION_WHEN": "When to publish",
+    "TYPE": {
+      "POST": "Post",
+      "REELS": "Reels",
+      "STORY": "Story"
+    },
     "PREVIEW": {
+      "TITLE": "Live preview",
       "OPEN": "Open",
       "ACTIVE": "Active now",
       "PUBLIC": "Public reply",
       "DM": "Direct message",
-      "EMPTY": "Your DM shows up here"
+      "EMPTY": "Your DM shows up here",
+      "MEDIA_EMPTY": "Your media shows up here",
+      "CAPTION_EMPTY": "your caption…",
+      "REELS": "Reels",
+      "YOUR_STORY": "Your story",
+      "STORY_REPLY": "Send message"
     },
     "SECTION_AUTOMATION": "Comment automation",
     "AUTOMATION_HINT": "People who comment the keyword on this post get an automatic DM.",
@@ -36,7 +47,11 @@
     "INBOX": "Instagram account",
     "IMAGES": "Images",
     "ADD_IMAGE": "Add",
+    "ADD_VIDEO": "Add video",
     "IMAGES_HINT": "1 image = single post, 2+ = carousel (up to {count}).",
+    "REELS_HINT": "Vertical video (9:16), 3–90s. MP4/MOV.",
+    "STORY_HINT": "1 image or video (9:16). Lasts 24h, no caption.",
+    "SHARE_TO_FEED": "Also share on feed",
     "CAPTION": "Caption",
     "CAPTION_PH": "Write the caption…",
     "WHEN": "When",

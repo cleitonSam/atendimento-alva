@@ -2,14 +2,25 @@
   "INSTAGRAM_PUBLISH": {
     "TITLE": "Publicações",
     "NEW": "Nova publicação",
-    "SECTION_MEDIA": "Publicação",
+    "SECTION_MEDIA": "Mídia",
     "SECTION_WHEN": "Quando publicar",
+    "TYPE": {
+      "POST": "Post",
+      "REELS": "Reels",
+      "STORY": "Story"
+    },
     "PREVIEW": {
+      "TITLE": "Prévia ao vivo",
       "OPEN": "Abrir",
       "ACTIVE": "Ativo agora",
       "PUBLIC": "Resposta no comentário",
       "DM": "Mensagem na DM",
-      "EMPTY": "Sua DM aparece aqui"
+      "EMPTY": "Sua DM aparece aqui",
+      "MEDIA_EMPTY": "Sua mídia aparece aqui",
+      "CAPTION_EMPTY": "sua legenda…",
+      "REELS": "Reels",
+      "YOUR_STORY": "Seu story",
+      "STORY_REPLY": "Enviar mensagem"
     },
     "SECTION_AUTOMATION": "Automação de comentário",
     "AUTOMATION_HINT": "Quem comentar a palavra-chave neste post recebe uma DM automática.",
@@ -36,7 +47,11 @@
     "INBOX": "Conta do Instagram",
     "IMAGES": "Imagens",
     "ADD_IMAGE": "Adicionar",
+    "ADD_VIDEO": "Add vídeo",
     "IMAGES_HINT": "1 imagem = post único, 2+ = carrossel (até {count}).",
+    "REELS_HINT": "Vídeo vertical (9:16), 3–90s. MP4/MOV.",
+    "STORY_HINT": "1 imagem ou vídeo (9:16). Dura 24h, sem legenda.",
+    "SHARE_TO_FEED": "Compartilhar também no feed",
     "CAPTION": "Legenda",
     "CAPTION_PH": "Escreva a legenda…",
     "WHEN": "Quando",

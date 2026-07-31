@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, watch, computed, onMounted } from 'vue';
+import { ref, watch, reactive, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useStore } from 'vuex';
 import { useMapGetter } from 'dashboard/composables/store';
@@ -9,9 +9,25 @@ import PostsAPI from 'dashboard/api/instagramScheduledPosts';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import InstagramStudioTabs from './InstagramStudioTabs.vue';
 import InstagramDmPreview from './InstagramDmPreview.vue';
+import InstagramMediaPreview from './InstagramMediaPreview.vue';
 
 const MAX_IMAGES = 10;
 const MATCH_TYPES = ['contains', 'exact', 'any'];
+const POST_TYPES = [
+  { key: 'post', icon: 'i-lucide-image', accept: 'image/*', multiple: true },
+  {
+    key: 'reels',
+    icon: 'i-lucide-clapperboard',
+    accept: 'video/*',
+    multiple: false,
+  },
+  {
+    key: 'story',
+    icon: 'i-lucide-camera',
+    accept: 'image/*,video/*',
+    multiple: false,
+  },
+];
 const INPUT_CLASS =
   'w-full px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 transition focus:outline-none focus:border-n-brand focus:ring-1 focus:ring-n-brand/40';
 
@@ -29,8 +45,11 @@ const mode = ref('list'); // list | form
 
 const blankForm = () => ({
   inbox_id: igInboxes.value[0]?.id ?? null,
+  post_type: 'post', // post | reels | story
   caption: '',
   images: [], // { preview, url, fileId, uploading }
+  video: null, // { preview, url, fileId, uploading }
+  share_to_feed: true,
   schedule: 'now', // now | later
   scheduled_at: '',
   automation: {
@@ -45,6 +64,15 @@ const blankForm = () => ({
   },
 });
 const form = ref(blankForm());
+
+const selectedInbox = computed(() =>
+  igInboxes.value.find(inbox => inbox.id === form.value.inbox_id)
+);
+const username = computed(() => selectedInbox.value?.name || 'seu_perfil');
+const isStory = computed(() => form.value.post_type === 'story');
+const isReels = computed(() => form.value.post_type === 'reels');
+const supportsAutomation = computed(() => !isStory.value); // story nao tem comentario publico
+const imageLimit = computed(() => (isStory.value ? 1 : MAX_IMAGES));
 
 // Se os inboxes carregam DEPOIS do form montar, preenche o inbox unico automaticamente.
 watch(igInboxes, list => {
@@ -63,11 +91,32 @@ async function load() {
   }
 }
 
+// ---- Midia ----
+function revokeVideo() {
+  if (form.value.video?.preview?.startsWith('blob:')) {
+    URL.revokeObjectURL(form.value.video.preview);
+  }
+}
+function clearMedia() {
+  revokeVideo();
+  form.value.images = [];
+  form.value.video = null;
+}
+
+const setPostType = type => {
+  if (form.value.post_type === type) return;
+  form.value.post_type = type;
+  clearMedia();
+  if (type === 'story') form.value.automation.enabled = false;
+};
+
 const openCreate = () => {
+  clearMedia();
   form.value = blankForm();
   mode.value = 'form';
 };
 const cancelForm = () => {
+  clearMedia();
   mode.value = 'list';
   form.value = blankForm();
 };
@@ -81,14 +130,14 @@ const readAsDataUrl = file =>
   });
 
 // Sobe o arquivo DIRETO pro ImageKit com a assinatura do backend (fetch cru, sem
-// mandar os headers de auth do app pro ImageKit; a foto nao passa pelo nosso servidor).
+// mandar os headers de auth do app pro ImageKit; a midia nao passa pelo nosso servidor).
 async function uploadToImagekit(file) {
   const { data: auth } = await PostsAPI.imagekitAuth();
   if (!auth || auth.error) throw new Error(t('INSTAGRAM_PUBLISH.UPLOAD_ERROR'));
 
   const fd = new FormData();
   fd.append('file', file);
-  fd.append('fileName', file.name || 'upload.jpg');
+  fd.append('fileName', file.name || 'upload');
   fd.append('publicKey', auth.public_key);
   fd.append('signature', auth.signature);
   fd.append('expire', auth.expire);
@@ -102,38 +151,71 @@ async function uploadToImagekit(file) {
   return { url: json.url, fileId: json.fileId };
 }
 
+async function addImage(file) {
+  // reactive() garante que as escritas (image.url/uploading) disparem o render e
+  // que o filtro por identidade (img !== image) funcione (proxy === proxy).
+  const preview = await readAsDataUrl(file);
+  const image = reactive({ preview, url: '', uploading: true });
+  form.value.images.push(image);
+  try {
+    const uploaded = await uploadToImagekit(file);
+    image.url = uploaded.url;
+    image.fileId = uploaded.fileId;
+  } catch (error) {
+    form.value.images = form.value.images.filter(img => img !== image);
+    useAlert(error?.message || t('INSTAGRAM_PUBLISH.UPLOAD_ERROR'));
+  } finally {
+    image.uploading = false;
+  }
+}
+
+async function setVideo(file) {
+  revokeVideo();
+  form.value.images = []; // video e imagem sao exclusivos
+  const video = reactive({
+    preview: URL.createObjectURL(file),
+    url: '',
+    uploading: true,
+  });
+  form.value.video = video;
+  try {
+    const uploaded = await uploadToImagekit(file);
+    video.url = uploaded.url;
+    video.fileId = uploaded.fileId;
+  } catch (error) {
+    clearMedia();
+    useAlert(error?.message || t('INSTAGRAM_PUBLISH.UPLOAD_ERROR'));
+  } finally {
+    if (form.value.video) form.value.video.uploading = false;
+  }
+}
+
 async function onFiles(event) {
   const files = Array.from(event.target.files || []);
   event.target.value = '';
   for (let i = 0; i < files.length; i += 1) {
-    if (form.value.images.length >= MAX_IMAGES) {
+    const file = files[i];
+    if (file.type.startsWith('video/')) {
+      // reels/story em video: 1 video substitui tudo
+      // eslint-disable-next-line no-await-in-loop
+      await setVideo(file);
+      break;
+    }
+    if (form.value.video) clearMedia(); // trocou video por imagem
+    if (form.value.images.length >= imageLimit.value) {
+      if (imageLimit.value < MAX_IMAGES) break;
       useAlert(t('INSTAGRAM_PUBLISH.MAX_IMAGES', { count: MAX_IMAGES }));
       break;
     }
-    const file = files[i];
     // eslint-disable-next-line no-await-in-loop
-    const preview = await readAsDataUrl(file);
-    // reactive() garante que as escritas (image.url/uploading) disparem o render e
-    // que o filtro por identidade (img !== image) funcione (proxy === proxy).
-    const image = reactive({ preview, url: '', uploading: true });
-    form.value.images.push(image);
-    try {
-      // eslint-disable-next-line no-await-in-loop
-      const uploaded = await uploadToImagekit(file);
-      image.url = uploaded.url;
-      image.fileId = uploaded.fileId;
-    } catch (error) {
-      form.value.images = form.value.images.filter(img => img !== image);
-      useAlert(error?.message || t('INSTAGRAM_PUBLISH.UPLOAD_ERROR'));
-    } finally {
-      image.uploading = false;
-    }
+    await addImage(file);
   }
 }
 
 const removeImage = image => {
   form.value.images = form.value.images.filter(img => img !== image);
 };
+const removeVideo = () => clearMedia();
 
 const uploadedUrls = computed(() =>
   form.value.images.filter(img => img.url).map(img => img.url)
@@ -142,13 +224,22 @@ const uploadedUrls = computed(() =>
 const uploadedFileIds = computed(() =>
   form.value.images.filter(img => img.url).map(img => img.fileId || '')
 );
-const anyUploading = computed(() =>
-  form.value.images.some(img => img.uploading)
+const mediaUploading = computed(
+  () =>
+    form.value.images.some(img => img.uploading) ||
+    !!form.value.video?.uploading
 );
+const mediaReady = computed(() => {
+  if (isReels.value) return !!form.value.video?.url;
+  if (isStory.value)
+    return !!form.value.video?.url || uploadedUrls.value.length > 0;
+  return uploadedUrls.value.length > 0;
+});
+const previewImages = computed(() => form.value.images.map(img => img.preview));
 
 const automationValid = computed(() => {
   const a = form.value.automation;
-  if (!a.enabled) return true;
+  if (!supportsAutomation.value || !a.enabled) return true;
   return (
     !!a.dm_message.trim() && (a.match_type === 'any' || !!a.keywords.trim())
   );
@@ -156,15 +247,15 @@ const automationValid = computed(() => {
 const canSave = computed(
   () =>
     form.value.inbox_id &&
-    uploadedUrls.value.length > 0 &&
-    !anyUploading.value &&
+    mediaReady.value &&
+    !mediaUploading.value &&
     (form.value.schedule === 'now' || form.value.scheduled_at) &&
     automationValid.value
 );
 
 function pendingAutomationPayload() {
   const a = form.value.automation;
-  if (!a.enabled) return null;
+  if (!supportsAutomation.value || !a.enabled) return null;
   return {
     name:
       form.value.caption.trim().slice(0, 40) || t('INSTAGRAM_AUTOMATIONS.NEW'),
@@ -178,24 +269,31 @@ function pendingAutomationPayload() {
   };
 }
 
+function buildPayload() {
+  const base = {
+    inbox_id: form.value.inbox_id,
+    post_type: form.value.post_type,
+    caption: isStory.value ? '' : form.value.caption.trim(),
+    image_urls: uploadedUrls.value,
+    image_file_ids: uploadedFileIds.value,
+    video_url: form.value.video?.url || null,
+    video_file_id: form.value.video?.fileId || null,
+    share_to_feed: isReels.value ? form.value.share_to_feed : true,
+    // datetime-local e hora LOCAL; converte pro instante UTC certo.
+    scheduled_at:
+      form.value.schedule === 'later'
+        ? new Date(form.value.scheduled_at).toISOString()
+        : null,
+    pending_automation: pendingAutomationPayload(),
+  };
+  return base;
+}
+
 async function save() {
   if (!canSave.value || saving.value) return;
   saving.value = true;
   try {
-    await PostsAPI.create({
-      instagram_scheduled_post: {
-        inbox_id: form.value.inbox_id,
-        caption: form.value.caption.trim(),
-        image_urls: uploadedUrls.value,
-        image_file_ids: uploadedFileIds.value,
-        // datetime-local e hora LOCAL; converte pro instante UTC certo.
-        scheduled_at:
-          form.value.schedule === 'later'
-            ? new Date(form.value.scheduled_at).toISOString()
-            : null,
-        pending_automation: pendingAutomationPayload(),
-      },
-    });
+    await PostsAPI.create({ instagram_scheduled_post: buildPayload() });
     useAlert(
       form.value.schedule === 'later'
         ? t('INSTAGRAM_PUBLISH.SCHEDULED_OK')
@@ -221,16 +319,25 @@ async function remove(post) {
   }
 }
 
+// ---- Lista ----
 const STATUS_STYLE = {
   scheduled: 'bg-n-blue-3 text-n-blue-11',
   publishing: 'bg-n-amber-3 text-n-amber-11',
   published: 'bg-n-teal-3 text-n-teal-11',
   failed: 'bg-n-ruby-3 text-n-ruby-11',
 };
+const TYPE_ICON = {
+  post: 'i-lucide-image',
+  reels: 'i-lucide-clapperboard',
+  story: 'i-lucide-camera',
+};
 const statusStyle = status =>
   STATUS_STYLE[status] || 'bg-n-alpha-2 text-n-slate-11';
 const statusLabel = status =>
   t(`INSTAGRAM_PUBLISH.STATUS.${status.toUpperCase()}`);
+const typeLabel = type =>
+  t(`INSTAGRAM_PUBLISH.TYPE.${(type || 'post').toUpperCase()}`);
+const postThumb = post => post.image_urls?.[0] || '';
 
 const whenLabel = post => {
   const iso = post.status === 'published' ? post.updated_at : post.scheduled_at;
@@ -293,11 +400,11 @@ onMounted(() => {
             class="flex gap-3 p-4 transition border rounded-xl border-n-weak bg-n-solid-1 hover:border-n-slate-5"
           >
             <div
-              class="flex-shrink-0 overflow-hidden rounded-lg size-16 bg-n-alpha-2"
+              class="relative flex-shrink-0 overflow-hidden rounded-lg size-16 bg-n-alpha-2"
             >
               <img
-                v-if="post.image_urls && post.image_urls[0]"
-                :src="post.image_urls[0]"
+                v-if="postThumb(post)"
+                :src="postThumb(post)"
                 alt=""
                 class="object-cover w-full h-full"
               />
@@ -305,8 +412,19 @@ onMounted(() => {
                 v-else
                 class="flex items-center justify-center w-full h-full text-n-slate-8"
               >
-                <span class="i-lucide-image size-6" />
+                <span
+                  :class="TYPE_ICON[post.post_type] || TYPE_ICON.post"
+                  class="size-6"
+                />
               </div>
+              <span
+                class="absolute flex items-center justify-center rounded-md bottom-1 left-1 size-5 bg-black/55 text-white/95"
+              >
+                <span
+                  :class="TYPE_ICON[post.post_type] || TYPE_ICON.post"
+                  class="size-3"
+                />
+              </span>
             </div>
             <div class="flex flex-col min-w-0 gap-1 flex-1">
               <div class="flex flex-wrap items-center gap-2">
@@ -315,6 +433,11 @@ onMounted(() => {
                   :class="statusStyle(post.status)"
                 >
                   {{ statusLabel(post.status) }}
+                </span>
+                <span
+                  class="text-[10px] font-medium text-n-slate-10 uppercase tracking-wide"
+                >
+                  {{ typeLabel(post.post_type) }}
                 </span>
                 <span
                   v-if="post.image_urls && post.image_urls.length > 1"
@@ -357,192 +480,277 @@ onMounted(() => {
         </ul>
       </template>
 
-      <!-- =================== FORMULARIO =================== -->
-      <form
+      <!-- =================== COMPOSITOR (2 painéis) =================== -->
+      <div
         v-else
-        class="flex flex-col max-w-2xl gap-4 p-6 mx-auto"
-        @submit.prevent="save"
+        class="grid gap-8 p-6 mx-auto max-w-5xl lg:grid-cols-[minmax(0,1fr)_18rem]"
       >
-        <!-- SECAO: Publicacao -->
-        <fieldset
-          class="flex flex-col gap-4 p-5 border rounded-xl border-n-weak bg-n-solid-1"
-        >
-          <legend class="flex items-center gap-2.5 px-1 -mb-1">
-            <span
-              class="flex items-center justify-center rounded-lg size-8 bg-n-alpha-2 text-n-brand"
+        <!-- ---- Coluna do formulario ---- -->
+        <form class="flex flex-col gap-4" @submit.prevent="save">
+          <!-- Seletor de formato -->
+          <div class="grid grid-cols-3 gap-2">
+            <button
+              v-for="type in POST_TYPES"
+              :key="type.key"
+              type="button"
+              class="flex flex-col items-center gap-1.5 px-3 py-3 text-xs font-semibold transition border rounded-xl"
+              :class="
+                form.post_type === type.key
+                  ? 'border-n-brand bg-n-brand/10 text-n-slate-12'
+                  : 'border-n-weak text-n-slate-11 hover:border-n-slate-6 hover:text-n-slate-12'
+              "
+              @click="setPostType(type.key)"
             >
-              <span class="i-lucide-image size-4" />
-            </span>
-            <span class="text-sm font-semibold text-n-slate-12">
-              {{ t('INSTAGRAM_PUBLISH.SECTION_MEDIA') }}
-            </span>
-          </legend>
-
-          <div v-if="igInboxes.length > 1" class="flex flex-col gap-1.5">
-            <label class="text-xs font-medium text-n-slate-11">
-              {{ t('INSTAGRAM_PUBLISH.INBOX') }}
-            </label>
-            <select v-model="form.inbox_id" :class="INPUT_CLASS">
-              <option
-                v-for="inbox in igInboxes"
-                :key="inbox.id"
-                :value="inbox.id"
-              >
-                {{ inbox.name }}
-              </option>
-            </select>
+              <span :class="type.icon" class="size-5" />
+              {{ t(`INSTAGRAM_PUBLISH.TYPE.${type.key.toUpperCase()}`) }}
+            </button>
           </div>
 
-          <div class="flex flex-col gap-2">
-            <div class="flex flex-wrap gap-2">
-              <div
-                v-for="(image, index) in form.images"
-                :key="index"
-                class="relative overflow-hidden border rounded-lg size-20 border-n-weak bg-n-alpha-2"
+          <!-- SECAO: Midia -->
+          <fieldset
+            class="flex flex-col gap-4 p-5 border rounded-xl border-n-weak bg-n-solid-1"
+          >
+            <legend class="flex items-center gap-2.5 px-1 -mb-1">
+              <span
+                class="flex items-center justify-center rounded-lg size-8 bg-n-alpha-2 text-n-brand"
               >
-                <img
-                  :src="image.preview"
-                  alt=""
+                <span class="i-lucide-image size-4" />
+              </span>
+              <span class="text-sm font-semibold text-n-slate-12">
+                {{ t('INSTAGRAM_PUBLISH.SECTION_MEDIA') }}
+              </span>
+            </legend>
+
+            <div v-if="igInboxes.length > 1" class="flex flex-col gap-1.5">
+              <label class="text-xs font-medium text-n-slate-11">
+                {{ t('INSTAGRAM_PUBLISH.INBOX') }}
+              </label>
+              <select v-model="form.inbox_id" :class="INPUT_CLASS">
+                <option
+                  v-for="inbox in igInboxes"
+                  :key="inbox.id"
+                  :value="inbox.id"
+                >
+                  {{ inbox.name }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Video (reels / story-video) -->
+            <div v-if="form.video" class="flex flex-col gap-2">
+              <div
+                class="relative w-40 overflow-hidden border rounded-lg aspect-[9/16] border-n-weak bg-n-alpha-2"
+              >
+                <video
+                  :src="form.video.preview"
                   class="object-cover w-full h-full"
+                  muted
+                  playsinline
                 />
                 <div
-                  v-if="image.uploading"
+                  v-if="form.video.uploading"
                   class="absolute inset-0 flex items-center justify-center bg-n-alpha-black2"
                 >
                   <Spinner class="text-white" />
                 </div>
                 <button
                   type="button"
-                  :disabled="image.uploading"
+                  :disabled="form.video.uploading"
                   :aria-label="t('INSTAGRAM_PUBLISH.REMOVE_IMAGE')"
                   class="absolute flex items-center justify-center transition rounded-full top-1 right-1 size-5 bg-n-solid-1/90 text-n-slate-12 hover:bg-n-solid-1 disabled:opacity-50"
-                  @click="removeImage(image)"
+                  @click="removeVideo"
                 >
                   <span class="i-lucide-x size-3" />
                 </button>
               </div>
-              <label
-                v-if="form.images.length < MAX_IMAGES"
-                class="flex flex-col items-center justify-center gap-1 text-xs transition cursor-pointer border border-dashed rounded-lg size-20 border-n-weak text-n-slate-10 hover:border-n-brand hover:text-n-brand"
-              >
-                <span class="i-lucide-plus size-5" />
-                {{ t('INSTAGRAM_PUBLISH.ADD_IMAGE') }}
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  class="hidden"
-                  @change="onFiles"
-                />
-              </label>
             </div>
-            <p class="text-xs text-n-slate-10">
-              {{ t('INSTAGRAM_PUBLISH.IMAGES_HINT', { count: MAX_IMAGES }) }}
-            </p>
-          </div>
 
-          <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-medium text-n-slate-11">
-              {{ t('INSTAGRAM_PUBLISH.CAPTION') }}
-            </label>
-            <textarea
-              v-model="form.caption"
-              rows="4"
-              :placeholder="t('INSTAGRAM_PUBLISH.CAPTION_PH')"
-              class="resize-none"
-              :class="[INPUT_CLASS]"
-            />
-          </div>
-        </fieldset>
+            <!-- Imagens (post / story-imagem) -->
+            <div v-if="!form.video" class="flex flex-col gap-2">
+              <div class="flex flex-wrap gap-2">
+                <div
+                  v-for="(image, index) in form.images"
+                  :key="index"
+                  class="relative overflow-hidden border rounded-lg size-20 border-n-weak bg-n-alpha-2"
+                >
+                  <img
+                    :src="image.preview"
+                    alt=""
+                    class="object-cover w-full h-full"
+                  />
+                  <div
+                    v-if="image.uploading"
+                    class="absolute inset-0 flex items-center justify-center bg-n-alpha-black2"
+                  >
+                    <Spinner class="text-white" />
+                  </div>
+                  <button
+                    type="button"
+                    :disabled="image.uploading"
+                    :aria-label="t('INSTAGRAM_PUBLISH.REMOVE_IMAGE')"
+                    class="absolute flex items-center justify-center transition rounded-full top-1 right-1 size-5 bg-n-solid-1/90 text-n-slate-12 hover:bg-n-solid-1 disabled:opacity-50"
+                    @click="removeImage(image)"
+                  >
+                    <span class="i-lucide-x size-3" />
+                  </button>
+                </div>
+                <label
+                  v-if="form.images.length < imageLimit"
+                  class="flex flex-col items-center justify-center gap-1 text-xs text-center transition cursor-pointer border border-dashed rounded-lg size-20 border-n-weak text-n-slate-10 hover:border-n-brand hover:text-n-brand"
+                >
+                  <span
+                    :class="isReels ? 'i-lucide-clapperboard' : 'i-lucide-plus'"
+                    class="size-5"
+                  />
+                  {{
+                    isReels
+                      ? t('INSTAGRAM_PUBLISH.ADD_VIDEO')
+                      : t('INSTAGRAM_PUBLISH.ADD_IMAGE')
+                  }}
+                  <input
+                    type="file"
+                    :accept="
+                      isStory
+                        ? 'image/*,video/*'
+                        : isReels
+                          ? 'video/*'
+                          : 'image/*'
+                    "
+                    :multiple="form.post_type === 'post'"
+                    class="hidden"
+                    @change="onFiles"
+                  />
+                </label>
+              </div>
+              <p class="text-xs text-n-slate-10">
+                {{
+                  isReels
+                    ? t('INSTAGRAM_PUBLISH.REELS_HINT')
+                    : isStory
+                      ? t('INSTAGRAM_PUBLISH.STORY_HINT')
+                      : t('INSTAGRAM_PUBLISH.IMAGES_HINT', {
+                          count: MAX_IMAGES,
+                        })
+                }}
+              </p>
+            </div>
 
-        <!-- SECAO: Quando -->
-        <fieldset
-          class="flex flex-col gap-3 p-5 border rounded-xl border-n-weak bg-n-solid-1"
-        >
-          <legend class="flex items-center gap-2.5 px-1 -mb-1">
-            <span
-              class="flex items-center justify-center rounded-lg size-8 bg-n-alpha-2 text-n-brand"
-            >
-              <span class="i-lucide-calendar-clock size-4" />
-            </span>
-            <span class="text-sm font-semibold text-n-slate-12">
-              {{ t('INSTAGRAM_PUBLISH.SECTION_WHEN') }}
-            </span>
-          </legend>
-          <div class="flex gap-2">
-            <button
-              type="button"
-              class="px-3 py-1.5 text-xs font-medium transition rounded-md"
-              :class="
-                form.schedule === 'now'
-                  ? 'bg-n-brand text-n-brand-text'
-                  : 'bg-n-alpha-2 text-n-slate-11 hover:text-n-slate-12'
-              "
-              @click="form.schedule = 'now'"
-            >
-              {{ t('INSTAGRAM_PUBLISH.NOW') }}
-            </button>
-            <button
-              type="button"
-              class="px-3 py-1.5 text-xs font-medium transition rounded-md"
-              :class="
-                form.schedule === 'later'
-                  ? 'bg-n-brand text-n-brand-text'
-                  : 'bg-n-alpha-2 text-n-slate-11 hover:text-n-slate-12'
-              "
-              @click="form.schedule = 'later'"
-            >
-              {{ t('INSTAGRAM_PUBLISH.SCHEDULE') }}
-            </button>
-          </div>
-          <input
-            v-if="form.schedule === 'later'"
-            v-model="form.scheduled_at"
-            type="datetime-local"
-            class="w-fit"
-            :class="[INPUT_CLASS]"
-          />
-        </fieldset>
+            <!-- Legenda (post / reels) -->
+            <div v-if="!isStory" class="flex flex-col gap-1.5">
+              <label class="text-xs font-medium text-n-slate-11">
+                {{ t('INSTAGRAM_PUBLISH.CAPTION') }}
+              </label>
+              <textarea
+                v-model="form.caption"
+                rows="4"
+                :placeholder="t('INSTAGRAM_PUBLISH.CAPTION_PH')"
+                class="resize-none"
+                :class="[INPUT_CLASS]"
+              />
+            </div>
 
-        <!-- SECAO: Automacao (opcional) -->
-        <fieldset
-          class="flex flex-col gap-3 p-5 border rounded-xl border-n-weak bg-n-solid-1"
-        >
-          <legend
-            class="flex items-center justify-between w-full gap-2 px-1 -mb-1"
-          >
-            <span class="flex items-center gap-2.5">
-              <span
-                class="flex items-center justify-center rounded-lg size-8 bg-n-alpha-2 text-n-brand"
-              >
-                <span class="i-lucide-bot-message-square size-4" />
-              </span>
-              <span class="flex flex-col">
-                <span class="text-sm font-semibold text-n-slate-12">
-                  {{ t('INSTAGRAM_PUBLISH.SECTION_AUTOMATION') }}
-                </span>
-                <span class="text-xs text-n-slate-10">
-                  {{ t('INSTAGRAM_PUBLISH.AUTOMATION_HINT') }}
-                </span>
-              </span>
-            </span>
+            <!-- Compartilhar reels no feed -->
             <label
-              class="flex items-center gap-2 text-xs font-medium cursor-pointer text-n-slate-11"
+              v-if="isReels"
+              class="flex items-center gap-2 text-sm cursor-pointer text-n-slate-12"
             >
               <input
-                v-model="form.automation.enabled"
+                v-model="form.share_to_feed"
                 type="checkbox"
                 class="accent-n-brand size-4"
               />
-              {{ t('INSTAGRAM_PUBLISH.AUTOMATION_ENABLE') }}
+              {{ t('INSTAGRAM_PUBLISH.SHARE_TO_FEED') }}
             </label>
-          </legend>
+          </fieldset>
 
-          <div
-            v-if="form.automation.enabled"
-            class="grid gap-4 pt-1 lg:grid-cols-[minmax(0,1fr)_13rem]"
+          <!-- SECAO: Quando -->
+          <fieldset
+            class="flex flex-col gap-3 p-5 border rounded-xl border-n-weak bg-n-solid-1"
           >
-            <div class="flex flex-col gap-3">
+            <legend class="flex items-center gap-2.5 px-1 -mb-1">
+              <span
+                class="flex items-center justify-center rounded-lg size-8 bg-n-alpha-2 text-n-brand"
+              >
+                <span class="i-lucide-calendar-clock size-4" />
+              </span>
+              <span class="text-sm font-semibold text-n-slate-12">
+                {{ t('INSTAGRAM_PUBLISH.SECTION_WHEN') }}
+              </span>
+            </legend>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="px-3 py-1.5 text-xs font-medium transition rounded-md"
+                :class="
+                  form.schedule === 'now'
+                    ? 'bg-n-brand text-n-brand-text'
+                    : 'bg-n-alpha-2 text-n-slate-11 hover:text-n-slate-12'
+                "
+                @click="form.schedule = 'now'"
+              >
+                {{ t('INSTAGRAM_PUBLISH.NOW') }}
+              </button>
+              <button
+                type="button"
+                class="px-3 py-1.5 text-xs font-medium transition rounded-md"
+                :class="
+                  form.schedule === 'later'
+                    ? 'bg-n-brand text-n-brand-text'
+                    : 'bg-n-alpha-2 text-n-slate-11 hover:text-n-slate-12'
+                "
+                @click="form.schedule = 'later'"
+              >
+                {{ t('INSTAGRAM_PUBLISH.SCHEDULE') }}
+              </button>
+            </div>
+            <input
+              v-if="form.schedule === 'later'"
+              v-model="form.scheduled_at"
+              type="datetime-local"
+              class="w-fit"
+              :class="[INPUT_CLASS]"
+            />
+          </fieldset>
+
+          <!-- SECAO: Automacao (post / reels) -->
+          <fieldset
+            v-if="supportsAutomation"
+            class="flex flex-col gap-3 p-5 border rounded-xl border-n-weak bg-n-solid-1"
+          >
+            <legend
+              class="flex items-center justify-between w-full gap-2 px-1 -mb-1"
+            >
+              <span class="flex items-center gap-2.5">
+                <span
+                  class="flex items-center justify-center rounded-lg size-8 bg-n-alpha-2 text-n-brand"
+                >
+                  <span class="i-lucide-bot-message-square size-4" />
+                </span>
+                <span class="flex flex-col">
+                  <span class="text-sm font-semibold text-n-slate-12">
+                    {{ t('INSTAGRAM_PUBLISH.SECTION_AUTOMATION') }}
+                  </span>
+                  <span class="text-xs text-n-slate-10">
+                    {{ t('INSTAGRAM_PUBLISH.AUTOMATION_HINT') }}
+                  </span>
+                </span>
+              </span>
+              <label
+                class="flex items-center gap-2 text-xs font-medium cursor-pointer text-n-slate-11"
+              >
+                <input
+                  v-model="form.automation.enabled"
+                  type="checkbox"
+                  class="accent-n-brand size-4"
+                />
+                {{ t('INSTAGRAM_PUBLISH.AUTOMATION_ENABLE') }}
+              </label>
+            </legend>
+
+            <div
+              v-if="form.automation.enabled"
+              class="flex flex-col gap-3 pt-1"
+            >
               <!-- Gatilho -->
               <div class="flex flex-col gap-1.5">
                 <label class="text-xs font-medium text-n-slate-11">
@@ -550,18 +758,22 @@ onMounted(() => {
                 </label>
                 <div class="flex gap-2">
                   <button
-                    v-for="type in MATCH_TYPES"
-                    :key="type"
+                    v-for="matchType in MATCH_TYPES"
+                    :key="matchType"
                     type="button"
                     class="px-2.5 py-1 text-xs font-medium transition rounded-md"
                     :class="
-                      form.automation.match_type === type
+                      form.automation.match_type === matchType
                         ? 'bg-n-brand text-n-brand-text'
                         : 'bg-n-alpha-2 text-n-slate-11 hover:text-n-slate-12'
                     "
-                    @click="form.automation.match_type = type"
+                    @click="form.automation.match_type = matchType"
                   >
-                    {{ t(`INSTAGRAM_AUTOMATIONS.MATCH.${type.toUpperCase()}`) }}
+                    {{
+                      t(
+                        `INSTAGRAM_AUTOMATIONS.MATCH.${matchType.toUpperCase()}`
+                      )
+                    }}
                   </button>
                 </div>
                 <input
@@ -627,40 +839,56 @@ onMounted(() => {
                 {{ t('INSTAGRAM_AUTOMATIONS.ONCE_PER_USER') }}
               </label>
             </div>
-            <div class="lg:sticky lg:top-1 h-fit">
-              <InstagramDmPreview
-                :public-reply="form.automation.public_reply"
-                :dm-message="form.automation.dm_message"
-                :dm-link="form.automation.dm_link"
-                :dm-button-label="form.automation.dm_button_label"
-              />
-            </div>
-          </div>
-        </fieldset>
+          </fieldset>
 
-        <!-- Acoes -->
-        <div class="flex items-center justify-end gap-2 pt-1">
-          <button
-            type="button"
-            class="px-4 py-2 text-sm font-medium transition rounded-lg text-n-slate-11 hover:text-n-slate-12"
-            @click="cancelForm"
+          <!-- Acoes -->
+          <div class="flex items-center justify-end gap-2 pt-1">
+            <button
+              type="button"
+              class="px-4 py-2 text-sm font-medium transition rounded-lg text-n-slate-11 hover:text-n-slate-12"
+              @click="cancelForm"
+            >
+              {{ t('INSTAGRAM_PUBLISH.CANCEL') }}
+            </button>
+            <button
+              type="submit"
+              :disabled="!canSave || saving"
+              class="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold transition rounded-lg bg-n-brand text-n-brand-text disabled:opacity-50 hover:brightness-110"
+            >
+              <Spinner v-if="saving" class="size-4" />
+              {{
+                form.schedule === 'later'
+                  ? t('INSTAGRAM_PUBLISH.SCHEDULE_BTN')
+                  : t('INSTAGRAM_PUBLISH.PUBLISH_BTN')
+              }}
+            </button>
+          </div>
+        </form>
+
+        <!-- ---- Coluna da PREVIA (sticky) ---- -->
+        <aside class="lg:sticky lg:top-0 h-fit flex flex-col gap-4">
+          <span
+            class="text-[10px] font-semibold tracking-wide uppercase text-n-slate-10"
           >
-            {{ t('INSTAGRAM_PUBLISH.CANCEL') }}
-          </button>
-          <button
-            type="submit"
-            :disabled="!canSave || saving"
-            class="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold transition rounded-lg bg-n-brand text-n-brand-text disabled:opacity-50 hover:brightness-110"
-          >
-            <Spinner v-if="saving" class="size-4" />
-            {{
-              form.schedule === 'later'
-                ? t('INSTAGRAM_PUBLISH.SCHEDULE_BTN')
-                : t('INSTAGRAM_PUBLISH.PUBLISH_BTN')
-            }}
-          </button>
-        </div>
-      </form>
+            {{ t('INSTAGRAM_PUBLISH.PREVIEW.TITLE') }}
+          </span>
+          <InstagramMediaPreview
+            :username="username"
+            :post-type="form.post_type"
+            :images="previewImages"
+            :video="form.video"
+            :caption="form.caption"
+          />
+          <InstagramDmPreview
+            v-if="supportsAutomation && form.automation.enabled"
+            :name="username"
+            :public-reply="form.automation.public_reply"
+            :dm-message="form.automation.dm_message"
+            :dm-link="form.automation.dm_link"
+            :dm-button-label="form.automation.dm_button_label"
+          />
+        </aside>
+      </div>
     </div>
   </section>
 </template>
