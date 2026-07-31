@@ -3,6 +3,7 @@ import { frontendURL } from '../../../helper/URLHelper';
 import store from '../../../store';
 import ConversationView from './ConversationView.vue';
 import InstagramCommentsView from './InstagramCommentsView.vue';
+import InstagramAutomationsView from './InstagramAutomationsView.vue';
 
 const CONVERSATION_PERMISSIONS = [
   'administrator',
@@ -252,6 +253,14 @@ export default {
       },
       component: InstagramCommentsView,
       props: route => ({ mediaId: route.params.mediaId }),
+    },
+    {
+      path: frontendURL('accounts/:accountId/instagram-automations'),
+      name: 'instagram_automations',
+      meta: {
+        permissions: CONVERSATION_PERMISSIONS,
+      },
+      component: InstagramAutomationsView,
     },
   ],
 };

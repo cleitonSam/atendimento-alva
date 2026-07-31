@@ -431,6 +431,13 @@ const menuItems = computed(() => {
                 icon: 'i-lucide-message-square-text',
                 to: accountScopedRoute('instagram_comments_dashboard'),
               },
+              {
+                name: 'InstagramAutomations',
+                activeOn: ['instagram_automations'],
+                label: t('SIDEBAR.INSTAGRAM_AUTOMATIONS'),
+                icon: 'i-lucide-bot-message-square',
+                to: accountScopedRoute('instagram_automations'),
+              },
             ]
           : []),
         {
