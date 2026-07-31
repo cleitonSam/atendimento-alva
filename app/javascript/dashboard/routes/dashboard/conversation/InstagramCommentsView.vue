@@ -82,11 +82,14 @@ async function loadDetail(mediaId) {
   }
 }
 
-// Aninha respostas (parent_id) sob os comentarios de topo.
+// Aninha respostas (parent_id) sob os comentarios de topo. Resposta orfa (cujo pai
+// nao esta carregado — ex.: pai fora da janela/apagado) sobe pra topo, senao sumia.
 const threadedComments = computed(() => {
+  const ids = new Set(comments.value.map(comment => comment.comment_id));
   const byParent = new Map();
   comments.value.forEach(comment => {
-    const key = comment.parent_id || 'root';
+    const isRoot = !comment.parent_id || !ids.has(comment.parent_id);
+    const key = isRoot ? 'root' : comment.parent_id;
     if (!byParent.has(key)) byParent.set(key, []);
     byParent.get(key).push(comment);
   });
