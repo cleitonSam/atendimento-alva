@@ -419,34 +419,6 @@ const menuItems = computed(() => {
             : 0,
           to: accountScopedRoute('conversation_unattended'),
         },
-        ...(hasInstagramChannel.value
-          ? [
-              {
-                name: 'InstagramComments',
-                activeOn: [
-                  'instagram_comments_dashboard',
-                  'instagram_comments_post',
-                ],
-                label: t('SIDEBAR.INSTAGRAM_COMMENTS'),
-                icon: 'i-lucide-message-square-text',
-                to: accountScopedRoute('instagram_comments_dashboard'),
-              },
-              {
-                name: 'InstagramAutomations',
-                activeOn: ['instagram_automations'],
-                label: t('SIDEBAR.INSTAGRAM_AUTOMATIONS'),
-                icon: 'i-lucide-bot-message-square',
-                to: accountScopedRoute('instagram_automations'),
-              },
-              {
-                name: 'InstagramPublish',
-                activeOn: ['instagram_publish'],
-                label: t('SIDEBAR.INSTAGRAM_PUBLISH'),
-                icon: 'i-lucide-image-plus',
-                to: accountScopedRoute('instagram_publish'),
-              },
-            ]
-          : []),
         {
           name: 'Folders',
           label: t('SIDEBAR.CUSTOM_VIEWS_FOLDER'),
@@ -525,6 +497,47 @@ const menuItems = computed(() => {
         },
       ],
     },
+    ...(hasInstagramChannel.value
+      ? [
+          {
+            name: 'Instagram',
+            label: t('SIDEBAR.INSTAGRAM'),
+            icon: 'i-woot-instagram-color',
+            activeOn: [
+              'instagram_comments_dashboard',
+              'instagram_comments_post',
+              'instagram_automations',
+              'instagram_publish',
+            ],
+            children: [
+              {
+                name: 'InstagramComments',
+                label: t('SIDEBAR.INSTAGRAM_COMMENTS'),
+                icon: 'i-lucide-message-square-text',
+                activeOn: [
+                  'instagram_comments_dashboard',
+                  'instagram_comments_post',
+                ],
+                to: accountScopedRoute('instagram_comments_dashboard'),
+              },
+              {
+                name: 'InstagramAutomations',
+                label: t('SIDEBAR.INSTAGRAM_AUTOMATIONS'),
+                icon: 'i-lucide-bot-message-square',
+                activeOn: ['instagram_automations'],
+                to: accountScopedRoute('instagram_automations'),
+              },
+              {
+                name: 'InstagramPublish',
+                label: t('SIDEBAR.INSTAGRAM_PUBLISH'),
+                icon: 'i-lucide-image-plus',
+                activeOn: ['instagram_publish'],
+                to: accountScopedRoute('instagram_publish'),
+              },
+            ],
+          },
+        ]
+      : []),
     {
       name: 'Captain',
       icon: 'i-woot-captain',
