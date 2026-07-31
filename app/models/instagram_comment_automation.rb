@@ -46,6 +46,7 @@ class InstagramCommentAutomation < ApplicationRecord
   validates :dm_message, presence: true
   validates :match_type, inclusion: { in: MATCH_TYPES }
   validate :keywords_present_unless_any
+  validate :inbox_belongs_to_account
 
   scope :enabled, -> { where(enabled: true) }
 
@@ -97,5 +98,13 @@ class InstagramCommentAutomation < ApplicationRecord
     return if match_type == 'any' || keyword_list.present?
 
     errors.add(:keywords, 'informe pelo menos uma palavra-chave (ou use o tipo "qualquer")')
+  end
+
+  # Isolamento: o inbox tem que ser da MESMA conta (senao um admin poderia apontar
+  # a automacao pro canal de outra conta).
+  def inbox_belongs_to_account
+    return if inbox_id.blank? || account_id.blank?
+
+    errors.add(:inbox, 'nao pertence a esta conta') unless inbox&.account_id == account_id
   end
 end

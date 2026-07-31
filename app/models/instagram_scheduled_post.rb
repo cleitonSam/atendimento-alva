@@ -39,6 +39,7 @@ class InstagramScheduledPost < ApplicationRecord
   validates :status, inclusion: { in: STATUSES }
   validate :at_least_one_image
   validate :within_image_limit
+  validate :inbox_belongs_to_account
 
   scope :due, -> { where(status: 'scheduled').where('scheduled_at IS NULL OR scheduled_at <= ?', Time.current) }
 
@@ -67,5 +68,12 @@ class InstagramScheduledPost < ApplicationRecord
 
   def within_image_limit
     errors.add(:image_urls, "no maximo #{MAX_IMAGES} imagens") if image_urls.size > MAX_IMAGES
+  end
+
+  # Isolamento: o inbox tem que ser da MESMA conta.
+  def inbox_belongs_to_account
+    return if inbox_id.blank? || account_id.blank?
+
+    errors.add(:inbox, 'nao pertence a esta conta') unless inbox&.account_id == account_id
   end
 end
