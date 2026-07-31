@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_31_050000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_31_070000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1092,6 +1092,15 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_31_050000) do
     t.index ["inbox_id"], name: "index_instagram_comment_automations_on_inbox_id"
   end
 
+  create_table "instagram_hashtag_sets", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "name", null: false
+    t.text "hashtags", default: "", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_instagram_hashtag_sets_on_account_id"
+  end
+
   create_table "instagram_scheduled_posts", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.bigint "inbox_id", null: false
@@ -1110,6 +1119,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_31_050000) do
     t.string "video_url"
     t.string "video_file_id"
     t.boolean "share_to_feed", default: true, null: false
+    t.text "first_comment"
+    t.boolean "auto_story", default: false, null: false
     t.index ["account_id"], name: "index_instagram_scheduled_posts_on_account_id"
     t.index ["inbox_id"], name: "index_instagram_scheduled_posts_on_inbox_id"
     t.index ["status", "scheduled_at"], name: "index_instagram_scheduled_posts_on_status_and_scheduled_at"
@@ -1555,6 +1566,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_31_050000) do
   add_foreign_key "inboxes", "portals"
   add_foreign_key "instagram_comment_automations", "accounts"
   add_foreign_key "instagram_comment_automations", "inboxes"
+  add_foreign_key "instagram_hashtag_sets", "accounts"
   add_foreign_key "instagram_scheduled_posts", "accounts"
   add_foreign_key "instagram_scheduled_posts", "inboxes"
   add_foreign_key "user_sessions", "users"

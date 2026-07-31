@@ -53,6 +53,13 @@
     "REELS_HINT": "Vertical video (9:16), 3–90s. MP4/MOV.",
     "STORY_HINT": "1 image or video (9:16). Lasts 24h, no caption.",
     "SHARE_TO_FEED": "Also share on feed",
+    "BEST_TIME": "Best time to post",
+    "SECTION_ENGAGEMENT": "Engagement",
+    "FIRST_COMMENT": "Auto first comment",
+    "FIRST_COMMENT_PH": "Hashtags or a CTA posted as the first comment…",
+    "FIRST_COMMENT_HINT": "Posted automatically right after publishing — keeps the caption clean.",
+    "AUTO_STORY": "Auto-share to your story",
+    "AUTO_STORY_HINT": "When you post to the feed, the cover is also shared to your story to drive views.",
     "CAPTION": "Caption",
     "CAPTION_PH": "Write the caption…",
     "WHEN": "When",
@@ -81,6 +88,17 @@
     "PUBLIC_REPLY": "Public reply on the comment (optional)",
     "PUBLIC_REPLY_PH": "e.g. Sent you a DM! 📩",
     "UPLOAD_ERROR": "Couldn't upload the image."
+  },
+  "INSTAGRAM_HASHTAGS": {
+    "TITLE": "Hashtag sets",
+    "COUNT": "{count}/30",
+    "SAVE_CURRENT": "Save current",
+    "NAME_PH": "Set name (e.g. Workout)",
+    "SAVE": "Save",
+    "CANCEL": "Cancel",
+    "SAVED": "Hashtag set saved.",
+    "SAVE_ERROR": "Couldn't save the hashtag set.",
+    "DELETE": "Delete set"
   },
   "INSTAGRAM_AUTOMATIONS": {
     "TITLE": "Comment automations",

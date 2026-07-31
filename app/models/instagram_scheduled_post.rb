@@ -3,7 +3,9 @@
 # Table name: instagram_scheduled_posts
 #
 #  id                 :bigint           not null, primary key
+#  auto_story         :boolean          default(FALSE), not null
 #  caption            :text
+#  first_comment      :text
 #  image_file_ids     :jsonb            not null
 #  image_urls         :jsonb            not null
 #  last_error         :text
@@ -13,13 +15,13 @@
 #  scheduled_at       :datetime
 #  share_to_feed      :boolean          default(TRUE), not null
 #  status             :string           default("scheduled"), not null
-#  video_file_id      :string
 #  video_url          :string
 #  created_at         :datetime         not null
 #  updated_at         :datetime         not null
 #  account_id         :bigint           not null
 #  inbox_id           :bigint           not null
 #  published_media_id :string
+#  video_file_id      :string
 #
 # Indexes
 #
@@ -71,10 +73,16 @@ class InstagramScheduledPost < ApplicationRecord
     post_type == 'post' && image_urls.size > 1
   end
 
-  # Story nao aceita legenda no Instagram; automacao de comentario so faz sentido em
-  # conteudo que aparece no feed/reels (story nao tem thread de comentarios publica).
+  # Story nao aceita legenda no Instagram; automacao de comentario/1o comentario so faz
+  # sentido em conteudo que aparece no feed/reels (story nao tem thread de comentarios).
   def supports_automation?
     !story?
+  end
+
+  # Auto-story: ao publicar no feed, a capa (image_urls.first) vira um Story pra puxar
+  # quem ve story pro post. So pra post de feed com imagem (nao Story, nao Reels de video).
+  def wants_auto_story?
+    auto_story? && post_type == 'post' && image_urls.present?
   end
 
   # Todos os fileIds do ImageKit desta publicacao (pra limpar apos publicar / no destroy).

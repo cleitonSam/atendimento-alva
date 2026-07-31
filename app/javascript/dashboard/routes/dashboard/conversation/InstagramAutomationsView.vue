@@ -107,12 +107,15 @@ const cancelForm = () => {
   form.value = blankForm();
 };
 
+const dmCoverUploading = ref(false);
 const canSave = computed(
   () =>
     form.value.inbox_id &&
     form.value.name.trim() &&
     form.value.dm_message.trim() &&
-    (form.value.match_type === 'any' || form.value.keywords.trim())
+    (form.value.match_type === 'any' || form.value.keywords.trim()) &&
+    (!form.value.dm_image_url || (form.value.dm_card_title || '').trim()) &&
+    !dmCoverUploading.value
 );
 
 function payload() {
@@ -436,7 +439,11 @@ onMounted(() => {
             </span>
           </legend>
           <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_14rem]">
-            <InstagramDmComposer v-model="form" :auth-fn="authFn" />
+            <InstagramDmComposer
+              v-model="form"
+              :auth-fn="authFn"
+              @update:uploading="dmCoverUploading = $event"
+            />
             <div class="lg:sticky lg:top-1 h-fit">
               <InstagramDmPreview
                 :name="form.name"

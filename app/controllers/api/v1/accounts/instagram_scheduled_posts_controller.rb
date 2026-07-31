@@ -11,6 +11,11 @@ class Api::V1::Accounts::InstagramScheduledPostsController < Api::V1::Accounts::
 
   def create
     post = posts.new(post_params.merge(status: 'scheduled'))
+    # Valida a automacao pendente ANTES de publicar: senao o post ia ao ar e a automacao
+    # (card sem titulo, botao invalido) sumia em silencio no create! do job.
+    invalid = pending_automation_error(post)
+    return render(json: { error: invalid }, status: :unprocessable_entity) if invalid
+
     post.save!
     # publica ja se nao tem data ou ja venceu; futuro fica pra varredura cron.
     Instagram::PublishInstagramPostJob.perform_later(post.id) if publish_now?(post)
@@ -52,9 +57,30 @@ class Api::V1::Accounts::InstagramScheduledPostsController < Api::V1::Accounts::
     post.scheduled_at.blank? || post.scheduled_at <= Time.current
   end
 
+  # Monta a automacao pendente em memoria e devolve as mensagens de erro (ou nil se ok).
+  def pending_automation_error(post)
+    cfg = post.pending_automation
+    return nil if cfg.blank? || !post.supports_automation?
+
+    automation = Current.account.instagram_comment_automations.new(pending_automation_attrs(cfg, post.inbox_id))
+    automation.valid? ? nil : automation.errors.full_messages.join('. ')
+  end
+
+  def pending_automation_attrs(cfg, inbox_id)
+    {
+      inbox_id: inbox_id, name: cfg['name'].presence || 'Automação',
+      keywords: cfg['keywords'], match_type: cfg['match_type'].presence || 'contains',
+      dm_message: cfg['dm_message'], dm_link: cfg['dm_link'], dm_button_label: cfg['dm_button_label'],
+      dm_buttons: Array(cfg['dm_buttons']), dm_image_url: cfg['dm_image_url'],
+      dm_image_file_id: cfg['dm_image_file_id'], dm_card_title: cfg['dm_card_title'],
+      public_reply: cfg['public_reply']
+    }
+  end
+
   def post_params
     params.require(:instagram_scheduled_post).permit(
       :inbox_id, :caption, :scheduled_at, :post_type, :video_url, :video_file_id, :share_to_feed,
+      :first_comment, :auto_story,
       image_urls: [], image_file_ids: [],
       pending_automation: [:name, :keywords, :match_type, :dm_message, :dm_link, :dm_button_label,
                            :dm_image_url, :dm_image_file_id, :dm_card_title, :public_reply, :once_per_user,

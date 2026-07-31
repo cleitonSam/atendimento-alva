@@ -137,14 +137,25 @@ class InstagramCommentAutomation < ApplicationRecord
   private
 
   def legacy_button
-    dm_link.present? ? [{ 'url' => dm_link, 'title' => dm_button_label }] : []
+    dm_link.present? ? [{ 'url' => normalize_url(dm_link), 'title' => dm_button_label }] : []
   end
 
-  # Aceita array de {title,url}; joga fora entradas sem url; corta em MAX_BUTTONS.
+  # Sem esquema o botao web_url do Instagram nao abre; assume https:// quando a pessoa
+  # digita so o dominio (ex.: "lumipage.com"). Outro esquema (javascript:, ftp:) fica
+  # como esta pra a validacao dm_buttons_shape barrar.
+  def normalize_url(url)
+    u = url.to_s.strip
+    return u if u.blank? || u.match?(%r{\Ahttps?://}i)
+    return u if u.match?(/\A[a-z][a-z0-9+.\-]*:/i)
+
+    "https://#{u}"
+  end
+
+  # Aceita array de {title,url}; joga fora entradas sem url; normaliza a url; corta em MAX_BUTTONS.
   def normalize_dm_buttons
     self.dm_buttons = Array(dm_buttons).filter_map do |btn|
       btn = btn.to_h.stringify_keys if btn.respond_to?(:to_h)
-      url = btn['url'].to_s.strip
+      url = normalize_url(btn['url'])
       next if url.blank?
 
       { 'url' => url, 'title' => btn['title'].to_s.strip }

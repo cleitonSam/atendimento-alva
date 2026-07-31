@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import { useImagekitUpload } from 'dashboard/composables/useImagekitUpload';
@@ -13,7 +13,7 @@ const props = defineProps({
   modelValue: { type: Object, required: true },
   authFn: { type: Function, required: true },
 });
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'update:uploading']);
 
 const { t } = useI18n();
 const { uploadToImagekit } = useImagekitUpload(props.authFn);
@@ -24,6 +24,9 @@ const INPUT_CLASS =
 
 const imageUploading = ref(false);
 const localPreview = ref('');
+
+// Avisa o pai quando a capa esta subindo, pra ele travar Salvar/Publicar e nao perder a imagem.
+watch(imageUploading, value => emit('update:uploading', value));
 
 function set(patch) {
   emit('update:modelValue', { ...props.modelValue, ...patch });

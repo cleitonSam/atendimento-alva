@@ -25,6 +25,8 @@ class Instagram::PublishPostService
     if media_id.present?
       @post.mark_published!(media_id, fetch_permalink(media_id))
       create_pending_automation(media_id)
+      post_first_comment(media_id)
+      publish_auto_story
       cleanup_imagekit
     else
       @post.mark_failed!(@error || 'falha ao publicar')
@@ -69,6 +71,38 @@ class Instagram::PublishPostService
       dm_image_file_id: cfg['dm_image_file_id'], dm_card_title: cfg['dm_card_title'],
       public_reply: cfg['public_reply'], once_per_user: cfg.fetch('once_per_user', true)
     }
+  end
+
+  # 1o comentario automatico (hashtags/CTA sem sujar a legenda). So feed/reels tem thread.
+  def post_first_comment(media_id)
+    return if @post.first_comment.blank? || @post.story?
+
+    response = post("#{GRAPH_BASE}/#{media_id}/comments", message: @post.first_comment)
+    Rails.logger.error "[IG-PUBLISH] 1o comentario HTTP #{response.code}: #{response.body.to_s[0, 200]}" unless response.success?
+  rescue StandardError => e
+    Rails.logger.error "[IG-PUBLISH] 1o comentario erro: #{e.message}"
+  end
+
+  # Ao publicar no feed, republica a capa como Story 9:16 (puxa quem ve story pro post).
+  # Roda ANTES do cleanup (usa a URL do ImageKit). Falha aqui nao derruba a publicacao.
+  def publish_auto_story
+    return unless @post.wants_auto_story?
+
+    creation_id = create_container(media_type: 'STORIES', image_url: story_image_url(@post.image_urls.first))
+    return if creation_id.blank? || !wait_until_ready(creation_id)
+
+    publish(creation_id)
+  rescue StandardError => e
+    Rails.logger.error "[IG-PUBLISH] auto-story erro: #{e.message}"
+  end
+
+  # Adapta a capa pro formato de Story: 9:16 com fundo borrado da propria imagem (look
+  # nativo do Instagram). Transformacao do ImageKit por query (a URL nao tem query).
+  def story_image_url(cover)
+    return cover if cover.blank? || cover.exclude?('ik.imagekit.io')
+
+    sep = cover.include?('?') ? '&' : '?'
+    "#{cover}#{sep}tr=w-1080,h-1920,cm-pad_resize,bg-blurred"
   end
 
   def create_and_publish

@@ -53,6 +53,13 @@
     "REELS_HINT": "Vídeo vertical (9:16), 3–90s. MP4/MOV.",
     "STORY_HINT": "1 imagem ou vídeo (9:16). Dura 24h, sem legenda.",
     "SHARE_TO_FEED": "Compartilhar também no feed",
+    "BEST_TIME": "Melhor horário pra postar",
+    "SECTION_ENGAGEMENT": "Engajamento",
+    "FIRST_COMMENT": "1º comentário automático",
+    "FIRST_COMMENT_PH": "Hashtags ou um CTA postados como o 1º comentário…",
+    "FIRST_COMMENT_HINT": "Postado automaticamente logo após publicar — mantém a legenda limpa.",
+    "AUTO_STORY": "Compartilhar no story automaticamente",
+    "AUTO_STORY_HINT": "Ao publicar no feed, a capa também vai pro seu story pra puxar visualizações.",
     "CAPTION": "Legenda",
     "CAPTION_PH": "Escreva a legenda…",
     "WHEN": "Quando",
@@ -81,6 +88,17 @@
     "PUBLIC_REPLY": "Resposta pública no comentário (opcional)",
     "PUBLIC_REPLY_PH": "ex.: Te mandei no direct! 📩",
     "UPLOAD_ERROR": "Não foi possível subir a imagem."
+  },
+  "INSTAGRAM_HASHTAGS": {
+    "TITLE": "Conjuntos de hashtags",
+    "COUNT": "{count}/30",
+    "SAVE_CURRENT": "Salvar atual",
+    "NAME_PH": "Nome do conjunto (ex.: Treino)",
+    "SAVE": "Salvar",
+    "CANCEL": "Cancelar",
+    "SAVED": "Conjunto de hashtags salvo.",
+    "SAVE_ERROR": "Não foi possível salvar o conjunto.",
+    "DELETE": "Excluir conjunto"
   },
   "INSTAGRAM_AUTOMATIONS": {
     "TITLE": "Automações de comentário",

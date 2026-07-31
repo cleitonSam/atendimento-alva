@@ -11,8 +11,15 @@ import InstagramStudioTabs from './InstagramStudioTabs.vue';
 import InstagramDmPreview from './InstagramDmPreview.vue';
 import InstagramDmComposer from './InstagramDmComposer.vue';
 import InstagramMediaPreview from './InstagramMediaPreview.vue';
+import InstagramHashtagPicker from './InstagramHashtagPicker.vue';
 
 const authFn = () => PostsAPI.imagekitAuth();
+
+// Horarios "quentes" (hora local) pra sugestao de melhor horario de postagem.
+const BEST_HOURS = [12, 18, 20];
+const pad2 = n => String(n).padStart(2, '0');
+const toLocalInput = dt =>
+  `${dt.getFullYear()}-${pad2(dt.getMonth() + 1)}-${pad2(dt.getDate())}T${pad2(dt.getHours())}:${pad2(dt.getMinutes())}`;
 
 const MAX_IMAGES = 10;
 const MATCH_TYPES = ['contains', 'exact', 'any'];
@@ -53,6 +60,8 @@ const blankForm = () => ({
   images: [], // { preview, url, fileId, uploading }
   video: null, // { preview, url, fileId, uploading }
   share_to_feed: true,
+  first_comment: '',
+  auto_story: false,
   schedule: 'now', // now | later
   scheduled_at: '',
   automation: {
@@ -242,11 +251,15 @@ const mediaReady = computed(() => {
 });
 const previewImages = computed(() => form.value.images.map(img => img.preview));
 
+const dmCoverUploading = ref(false);
 const automationValid = computed(() => {
   const a = form.value.automation;
   if (!supportsAutomation.value || !a.enabled) return true;
   return (
-    !!a.dm_message.trim() && (a.match_type === 'any' || !!a.keywords.trim())
+    !!a.dm_message.trim() &&
+    (a.match_type === 'any' || !!a.keywords.trim()) &&
+    (!a.dm_image_url || !!(a.dm_card_title || '').trim()) &&
+    !dmCoverUploading.value
   );
 });
 const canSave = computed(
@@ -278,6 +291,37 @@ function pendingAutomationPayload() {
   };
 }
 
+// Insere as hashtags de um conjunto no 1o comentario (nao na legenda, pra nao poluir).
+function insertHashtags(text) {
+  const cur = form.value.first_comment.trim();
+  form.value.first_comment = cur ? `${cur} ${text}` : text;
+}
+
+// Sugestao de melhor horario: proximos slots quentes (hora local) a partir de agora.
+const bestSlots = computed(() => {
+  const now = new Date();
+  const slots = [];
+  for (let d = 0; d < 3 && slots.length < 3; d += 1) {
+    for (let i = 0; i < BEST_HOURS.length && slots.length < 3; i += 1) {
+      const dt = new Date(now);
+      dt.setDate(now.getDate() + d);
+      dt.setHours(BEST_HOURS[i], 0, 0, 0);
+      if (dt > now) slots.push(dt);
+    }
+  }
+  return slots;
+});
+const slotLabel = dt =>
+  dt.toLocaleString(undefined, {
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+function pickSlot(dt) {
+  form.value.schedule = 'later';
+  form.value.scheduled_at = toLocalInput(dt);
+}
+
 function buildPayload() {
   const base = {
     inbox_id: form.value.inbox_id,
@@ -288,6 +332,8 @@ function buildPayload() {
     video_url: form.value.video?.url || null,
     video_file_id: form.value.video?.fileId || null,
     share_to_feed: isReels.value ? form.value.share_to_feed : true,
+    first_comment: isStory.value ? '' : form.value.first_comment.trim(),
+    auto_story: form.value.post_type === 'post' ? form.value.auto_story : false,
     // datetime-local e hora LOCAL; converte pro instante UTC certo.
     scheduled_at:
       form.value.schedule === 'later'
@@ -719,6 +765,81 @@ onMounted(() => {
               class="w-fit"
               :class="[INPUT_CLASS]"
             />
+            <!-- Sugestao de melhor horario -->
+            <div class="flex flex-col gap-1.5">
+              <span class="text-xs font-medium text-n-slate-11">
+                {{ t('INSTAGRAM_PUBLISH.BEST_TIME') }}
+              </span>
+              <div class="flex flex-wrap gap-1.5">
+                <button
+                  v-for="(slot, i) in bestSlots"
+                  :key="i"
+                  type="button"
+                  class="px-2.5 py-1 text-xs font-medium capitalize transition border rounded-full border-n-weak text-n-slate-11 hover:border-n-brand hover:text-n-brand"
+                  @click="pickSlot(slot)"
+                >
+                  {{ slotLabel(slot) }}
+                </button>
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- SECAO: Engajamento (post / reels) -->
+          <fieldset
+            v-if="!isStory"
+            class="flex flex-col gap-4 p-5 border rounded-xl border-n-weak bg-n-solid-1"
+          >
+            <legend class="flex items-center gap-2.5 px-1 -mb-1">
+              <span
+                class="flex items-center justify-center rounded-lg size-8 bg-n-alpha-2 text-n-brand"
+              >
+                <span class="i-lucide-sparkles size-4" />
+              </span>
+              <span class="text-sm font-semibold text-n-slate-12">
+                {{ t('INSTAGRAM_PUBLISH.SECTION_ENGAGEMENT') }}
+              </span>
+            </legend>
+
+            <!-- 1o comentario -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-xs font-medium text-n-slate-11">
+                {{ t('INSTAGRAM_PUBLISH.FIRST_COMMENT') }}
+              </label>
+              <textarea
+                v-model="form.first_comment"
+                rows="2"
+                :placeholder="t('INSTAGRAM_PUBLISH.FIRST_COMMENT_PH')"
+                class="resize-none"
+                :class="[INPUT_CLASS]"
+              />
+              <p class="text-xs text-n-slate-10">
+                {{ t('INSTAGRAM_PUBLISH.FIRST_COMMENT_HINT') }}
+              </p>
+            </div>
+
+            <!-- Conjuntos de hashtags -->
+            <InstagramHashtagPicker
+              :current-text="form.first_comment"
+              @insert="insertHashtags"
+            />
+
+            <!-- Auto-story (so post de feed) -->
+            <label
+              v-if="form.post_type === 'post'"
+              class="flex items-start gap-2 text-sm cursor-pointer text-n-slate-12"
+            >
+              <input
+                v-model="form.auto_story"
+                type="checkbox"
+                class="mt-0.5 accent-n-brand size-4"
+              />
+              <span class="flex flex-col">
+                <span>{{ t('INSTAGRAM_PUBLISH.AUTO_STORY') }}</span>
+                <span class="text-xs text-n-slate-10">
+                  {{ t('INSTAGRAM_PUBLISH.AUTO_STORY_HINT') }}
+                </span>
+              </span>
+            </label>
           </fieldset>
 
           <!-- SECAO: Automacao (post / reels) -->
@@ -798,6 +919,7 @@ onMounted(() => {
               <InstagramDmComposer
                 v-model="form.automation"
                 :auth-fn="authFn"
+                @update:uploading="dmCoverUploading = $event"
               />
 
               <label

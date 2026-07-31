@@ -319,6 +319,7 @@ Rails.application.routes.draw do
           resources :instagram_comment_automations do
             get :imagekit_auth, on: :collection
           end
+          resources :instagram_hashtag_sets, only: [:index, :create, :update, :destroy]
           resources :instagram_scheduled_posts, only: [:index, :create, :destroy] do
             get :imagekit_auth, on: :collection
           end

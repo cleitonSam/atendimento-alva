@@ -23,7 +23,7 @@ const validButtons = computed(() =>
   props.buttons
     .filter(btn => btn.url?.trim())
     .slice(0, 3)
-    .map(btn => btn.title?.trim() || t('INSTAGRAM_PUBLISH.PREVIEW.OPEN'))
+    .map(btn => btn.title?.trim() || 'Abrir')
 );
 const hasContent = computed(
   () => hasCard.value || props.dmMessage.trim() || validButtons.value.length

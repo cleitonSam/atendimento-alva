@@ -96,6 +96,7 @@ class Account < ApplicationRecord
   has_many :hooks, dependent: :destroy_async, class_name: 'Integrations::Hook'
   has_many :inboxes, dependent: :destroy_async
   has_many :instagram_comment_automations, dependent: :destroy_async
+  has_many :instagram_hashtag_sets, dependent: :destroy_async
   has_many :instagram_scheduled_posts, dependent: :destroy_async
   has_many :labels, dependent: :destroy_async
   has_many :line_channels, dependent: :destroy_async, class_name: '::Channel::Line'
