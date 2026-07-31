@@ -59,11 +59,18 @@ class Api::V1::Accounts::InstagramCommentedPostsController < Api::V1::Accounts::
   # Mensagens de comentario das conversas de comentario da conta. O filtro is_instagram_comment
   # roda em Ruby (o model desserializa content_attributes); a lista ja e limitada ao volume
   # de comentarios (conversas type=instagram_comment), fora as atividades de resposta.
+  RECENT_WINDOW = 90.days
+  MESSAGE_CAP = 5_000
+
   def comment_messages
     # 'deleted' e accessor dentro de content_attributes (store), NAO coluna — filtrar em
     # Ruby (nao da pra .where(deleted:); o content_attributes ainda e json double-encoded).
+    # Limita janela + cap pra nao materializar TODO o historico de comentarios da conta.
     @comment_messages ||= Message
                           .where(conversation_id: comment_conversation_ids)
+                          .where('messages.created_at >= ?', RECENT_WINDOW.ago)
+                          .order(created_at: :desc)
+                          .limit(MESSAGE_CAP)
                           .includes(:sender, conversation: { inbox: :channel })
                           .to_a
                           .select { |message| message.content_attributes['is_instagram_comment'] && !message.deleted }

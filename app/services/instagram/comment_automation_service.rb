@@ -17,7 +17,7 @@ class Instagram::CommentAutomationService
     return unless applicable?
 
     automation = matching_automation
-    return if automation.nil? || automation.already_handled?(commenter_id)
+    return if automation.nil?
 
     dispatch(automation)
   rescue StandardError => e
@@ -31,12 +31,19 @@ class Instagram::CommentAutomationService
   end
 
   def dispatch(automation)
+    # Reserva o usuario ANTES de enviar (atomico) -> nada de DM dupla em corrida.
+    return unless automation.claim_dispatch!(commenter_id)
+
     dm_result = send_dm(automation)
     reply_result = automation.public_reply.present? ? send_public_reply(automation) : nil
-    return unless dm_result[:ok] || reply_result&.dig(:ok)
 
-    automation.record_dispatch!(commenter_id)
-    record_activity(automation, dm_result, reply_result)
+    if dm_result[:ok] || reply_result&.dig(:ok)
+      automation.count_sent!
+      record_activity(automation, dm_result, reply_result)
+    else
+      # falhou tudo -> libera a reserva pra um retry poder tentar de novo
+      automation.unclaim_dispatch!(commenter_id)
+    end
   end
 
   def comment_id

@@ -23,8 +23,25 @@ class Instagram::CommentReplyService
     result = {}
     result[:public] = send_public_reply if @public_reply
     result[:dm] = send_private_reply if @dm_reply
+    flag_total_failure(result)
     record_activity(result)
     result
+  end
+
+  # Se TUDO que tentou enviar falhou na Graph, marca erro no topo (senao o controller
+  # devolvia success:true mesmo com a Meta recusando).
+  def flag_total_failure(result)
+    attempted = result.values
+    return if attempted.empty? || attempted.any? { |r| r[:ok] }
+
+    result[:error] = graph_error_summary(attempted)
+  end
+
+  def graph_error_summary(attempted)
+    messages = attempted.filter_map { |r| r[:error] }
+    return messages.join(' | ') if messages.any?
+
+    "graph_#{attempted.filter_map { |r| r[:code] }.join(',')}"
   end
 
   private
@@ -39,8 +56,7 @@ class Instagram::CommentReplyService
       query: { access_token: access_token },
       body: { message: @public_reply }
     )
-    log_failure('public', response) unless response.success?
-    { ok: response.success?, code: response.code }
+    build_result('public', response)
   end
 
   def send_private_reply
@@ -51,8 +67,20 @@ class Instagram::CommentReplyService
       body: { recipient: { comment_id: @comment_id }, message: { text: @dm_reply } }.to_json,
       headers: { 'Content-Type' => 'application/json' }
     )
-    log_failure('private', response) unless response.success?
-    { ok: response.success?, code: response.code }
+    build_result('private', response)
+  end
+
+  def build_result(kind, response)
+    log_failure(kind, response) unless response.success?
+    { ok: response.success?, code: response.code, error: (response.success? ? nil : graph_error(response)) }.compact
+  end
+
+  def graph_error(response)
+    parsed = response.parsed_response
+    parsed = {} unless parsed.is_a?(Hash)
+    [parsed.dig('error', 'code'), parsed.dig('error', 'message')].compact.join(' - ').presence || "HTTP #{response.code}"
+  rescue StandardError
+    "HTTP #{response.code}"
   end
 
   # Atividade (message_type activity) — visivel, mas NUNCA re-enviada como mensagem.

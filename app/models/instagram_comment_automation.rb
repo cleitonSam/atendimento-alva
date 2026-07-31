@@ -81,11 +81,29 @@ class InstagramCommentAutomation < ApplicationRecord
     once_per_user? && handled_commenter_ids.include?(commenter_id.to_s)
   end
 
-  # Marca o usuario como atendido (cap pra nao inflar o jsonb) e conta o envio.
-  def record_dispatch!(commenter_id)
-    self.handled_commenter_ids = (handled_commenter_ids + [commenter_id.to_s]).uniq.last(5000)
-    self.sent_count += 1
-    save!
+  # Reserva o usuario ATOMICAMENTE (lock + re-check dentro do lock) pra dois webhooks
+  # simultaneos do mesmo comentador nao gerarem DM dupla. Retorna false se ja atendido.
+  def claim_dispatch!(commenter_id)
+    with_lock do
+      next false if already_handled?(commenter_id)
+
+      self.handled_commenter_ids = (handled_commenter_ids + [commenter_id.to_s]).uniq.last(5000)
+      save!
+      true
+    end
+  end
+
+  # Desfaz a reserva quando o envio falhou por completo (pra um retry poder tentar).
+  def unclaim_dispatch!(commenter_id)
+    with_lock do
+      self.handled_commenter_ids = handled_commenter_ids - [commenter_id.to_s]
+      save!
+    end
+  end
+
+  # Incrementa a contagem via SQL (atomico, sem read-modify-write).
+  def count_sent!
+    self.class.increment_counter(:sent_count, id) # rubocop:disable Rails/SkipsModelValidations
   end
 
   private
