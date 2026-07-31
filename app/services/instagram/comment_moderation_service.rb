@@ -34,10 +34,29 @@ class Instagram::CommentModerationService
     if response.success?
       mark_local_deleted
       record_activity('Comentário excluído no Instagram.')
-    else
-      log_failure('delete', response)
+      return { ok: true, code: response.code }
     end
+
+    # Objeto ja nao existe no Instagram (ex.: a pessoa apagou o comentario/post) -> some
+    # da plataforma mesmo assim (e so o nosso cache); delete idempotente.
+    if already_gone?(response)
+      mark_local_deleted
+      record_activity('Comentário removido (já não existe no Instagram).')
+      return { ok: true, code: response.code, gone: true }
+    end
+
+    log_failure('delete', response)
     result_for(response)
+  end
+
+  # Erro 100 "... does not exist ..." = o objeto ja foi removido no Instagram.
+  def already_gone?(response)
+    parsed = response.parsed_response
+    parsed = {} unless parsed.is_a?(Hash)
+    parsed.dig('error', 'code') == 100 &&
+      parsed.dig('error', 'message').to_s.downcase.include?('does not exist')
+  rescue StandardError
+    false
   end
 
   def apply_hidden(hidden)
