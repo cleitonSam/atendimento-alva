@@ -521,17 +521,10 @@ const menuItems = computed(() => {
                 to: accountScopedRoute('instagram_comments_dashboard'),
               },
               {
-                name: 'InstagramAutomations',
-                label: t('SIDEBAR.INSTAGRAM_AUTOMATIONS'),
-                icon: 'i-lucide-bot-message-square',
-                activeOn: ['instagram_automations'],
-                to: accountScopedRoute('instagram_automations'),
-              },
-              {
                 name: 'InstagramPublish',
                 label: t('SIDEBAR.INSTAGRAM_PUBLISH'),
                 icon: 'i-lucide-image-plus',
-                activeOn: ['instagram_publish'],
+                activeOn: ['instagram_publish', 'instagram_automations'],
                 to: accountScopedRoute('instagram_publish'),
               },
             ],

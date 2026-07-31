@@ -4,6 +4,13 @@
     "NEW": "New post",
     "SECTION_MEDIA": "Post",
     "SECTION_WHEN": "When to publish",
+    "PREVIEW": {
+      "OPEN": "Open",
+      "ACTIVE": "Active now",
+      "PUBLIC": "Public reply",
+      "DM": "Direct message",
+      "EMPTY": "Your DM shows up here"
+    },
     "SECTION_AUTOMATION": "Comment automation",
     "AUTOMATION_HINT": "People who comment the keyword on this post get an automatic DM.",
     "AUTOMATION_ENABLE": "Enable for this post",

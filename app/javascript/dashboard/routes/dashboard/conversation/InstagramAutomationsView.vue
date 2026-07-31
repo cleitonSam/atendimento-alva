@@ -7,6 +7,8 @@ import { useAlert } from 'dashboard/composables';
 import { INBOX_TYPES } from 'dashboard/helper/inbox';
 import AutomationsAPI from 'dashboard/api/instagramCommentAutomations';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
+import InstagramStudioTabs from './InstagramStudioTabs.vue';
+import InstagramDmPreview from './InstagramDmPreview.vue';
 
 const { t } = useI18n();
 const store = useStore();
@@ -191,16 +193,11 @@ onMounted(() => {
     <header
       class="flex items-center justify-between flex-shrink-0 gap-2 px-6 py-4 border-b border-n-weak"
     >
-      <div class="flex items-center gap-2 min-w-0">
-        <span class="i-lucide-bot-message-square size-5 text-n-brand" />
-        <h1 class="text-lg font-semibold truncate text-n-slate-12">
-          {{ t('INSTAGRAM_AUTOMATIONS.TITLE') }}
-        </h1>
-      </div>
+      <InstagramStudioTabs />
       <button
         v-if="mode === 'list'"
         type="button"
-        class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg bg-n-brand text-n-brand-text hover:brightness-110"
+        class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition rounded-lg bg-n-brand text-n-brand-text hover:brightness-110"
         @click="openCreate"
       >
         <span class="i-lucide-plus size-4" />
@@ -425,44 +422,57 @@ onMounted(() => {
               {{ t('INSTAGRAM_AUTOMATIONS.SECTION_REPLY') }}
             </span>
           </legend>
-          <!-- DM -->
-          <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-medium text-n-slate-11">
-              {{ t('INSTAGRAM_AUTOMATIONS.DM_MESSAGE') }}
-            </label>
-            <textarea
-              v-model="form.dm_message"
-              rows="3"
-              :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_MESSAGE_PH')"
-              class="px-3 py-2 text-sm border rounded-lg resize-none bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
-            />
-            <div class="flex gap-2">
-              <input
-                v-model="form.dm_link"
-                type="url"
-                :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_LINK_PH')"
-                class="flex-1 px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
-              />
-              <input
-                v-model="form.dm_button_label"
-                type="text"
-                :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_BUTTON_PH')"
-                class="w-40 px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
+          <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_13rem]">
+            <div class="flex flex-col gap-4">
+              <!-- DM -->
+              <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-medium text-n-slate-11">
+                  {{ t('INSTAGRAM_AUTOMATIONS.DM_MESSAGE') }}
+                </label>
+                <textarea
+                  v-model="form.dm_message"
+                  rows="3"
+                  :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_MESSAGE_PH')"
+                  class="px-3 py-2 text-sm border rounded-lg resize-none bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
+                />
+                <div class="flex gap-2">
+                  <input
+                    v-model="form.dm_link"
+                    type="url"
+                    :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_LINK_PH')"
+                    class="flex-1 px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
+                  />
+                  <input
+                    v-model="form.dm_button_label"
+                    type="text"
+                    :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_BUTTON_PH')"
+                    class="w-40 px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
+                  />
+                </div>
+              </div>
+
+              <!-- Resposta publica -->
+              <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-medium text-n-slate-11">
+                  {{ t('INSTAGRAM_AUTOMATIONS.PUBLIC_REPLY') }}
+                </label>
+                <input
+                  v-model="form.public_reply"
+                  type="text"
+                  :placeholder="t('INSTAGRAM_AUTOMATIONS.PUBLIC_REPLY_PH')"
+                  class="px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
+                />
+              </div>
+            </div>
+            <div class="lg:sticky lg:top-1 h-fit">
+              <InstagramDmPreview
+                :name="form.name"
+                :public-reply="form.public_reply"
+                :dm-message="form.dm_message"
+                :dm-link="form.dm_link"
+                :dm-button-label="form.dm_button_label"
               />
             </div>
-          </div>
-
-          <!-- Resposta publica -->
-          <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-medium text-n-slate-11">
-              {{ t('INSTAGRAM_AUTOMATIONS.PUBLIC_REPLY') }}
-            </label>
-            <input
-              v-model="form.public_reply"
-              type="text"
-              :placeholder="t('INSTAGRAM_AUTOMATIONS.PUBLIC_REPLY_PH')"
-              class="px-3 py-2 text-sm border rounded-lg bg-n-background border-n-weak text-n-slate-12 focus:outline-none focus:border-n-brand"
-            />
           </div>
         </fieldset>
 

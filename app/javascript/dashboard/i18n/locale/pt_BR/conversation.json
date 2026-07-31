@@ -4,6 +4,13 @@
     "NEW": "Nova publicação",
     "SECTION_MEDIA": "Publicação",
     "SECTION_WHEN": "Quando publicar",
+    "PREVIEW": {
+      "OPEN": "Abrir",
+      "ACTIVE": "Ativo agora",
+      "PUBLIC": "Resposta no comentário",
+      "DM": "Mensagem na DM",
+      "EMPTY": "Sua DM aparece aqui"
+    },
     "SECTION_AUTOMATION": "Automação de comentário",
     "AUTOMATION_HINT": "Quem comentar a palavra-chave neste post recebe uma DM automática.",
     "AUTOMATION_ENABLE": "Ativar para este post",

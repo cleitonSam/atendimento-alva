@@ -7,6 +7,8 @@ import { useAlert } from 'dashboard/composables';
 import { INBOX_TYPES } from 'dashboard/helper/inbox';
 import PostsAPI from 'dashboard/api/instagramScheduledPosts';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
+import InstagramStudioTabs from './InstagramStudioTabs.vue';
+import InstagramDmPreview from './InstagramDmPreview.vue';
 
 const MAX_IMAGES = 10;
 const MATCH_TYPES = ['contains', 'exact', 'any'];
@@ -247,12 +249,7 @@ onMounted(() => {
     <header
       class="flex items-center justify-between flex-shrink-0 gap-2 px-6 py-4 border-b border-n-weak"
     >
-      <div class="flex items-center gap-2 min-w-0">
-        <span class="i-lucide-image-plus size-5 text-n-brand" />
-        <h1 class="text-lg font-semibold truncate text-n-slate-12">
-          {{ t('INSTAGRAM_PUBLISH.TITLE') }}
-        </h1>
-      </div>
+      <InstagramStudioTabs />
       <button
         v-if="mode === 'list'"
         type="button"
@@ -541,90 +538,103 @@ onMounted(() => {
             </label>
           </legend>
 
-          <div v-if="form.automation.enabled" class="flex flex-col gap-3 pt-1">
-            <!-- Gatilho -->
-            <div class="flex flex-col gap-1.5">
-              <label class="text-xs font-medium text-n-slate-11">
-                {{ t('INSTAGRAM_AUTOMATIONS.TRIGGER') }}
-              </label>
-              <div class="flex gap-2">
-                <button
-                  v-for="type in MATCH_TYPES"
-                  :key="type"
-                  type="button"
-                  class="px-2.5 py-1 text-xs font-medium transition rounded-md"
-                  :class="
-                    form.automation.match_type === type
-                      ? 'bg-n-brand text-n-brand-text'
-                      : 'bg-n-alpha-2 text-n-slate-11 hover:text-n-slate-12'
-                  "
-                  @click="form.automation.match_type = type"
-                >
-                  {{ t(`INSTAGRAM_AUTOMATIONS.MATCH.${type.toUpperCase()}`) }}
-                </button>
-              </div>
-              <input
-                v-if="form.automation.match_type !== 'any'"
-                v-model="form.automation.keywords"
-                type="text"
-                :placeholder="t('INSTAGRAM_AUTOMATIONS.KEYWORDS_PH')"
-                :class="INPUT_CLASS"
-              />
-            </div>
-
-            <!-- DM -->
-            <div class="flex flex-col gap-1.5">
-              <label class="text-xs font-medium text-n-slate-11">
-                {{ t('INSTAGRAM_AUTOMATIONS.DM_MESSAGE') }}
-              </label>
-              <textarea
-                v-model="form.automation.dm_message"
-                rows="2"
-                :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_MESSAGE_PH')"
-                class="resize-none"
-                :class="[INPUT_CLASS]"
-              />
-              <div class="flex gap-2">
+          <div
+            v-if="form.automation.enabled"
+            class="grid gap-4 pt-1 lg:grid-cols-[minmax(0,1fr)_13rem]"
+          >
+            <div class="flex flex-col gap-3">
+              <!-- Gatilho -->
+              <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-medium text-n-slate-11">
+                  {{ t('INSTAGRAM_AUTOMATIONS.TRIGGER') }}
+                </label>
+                <div class="flex gap-2">
+                  <button
+                    v-for="type in MATCH_TYPES"
+                    :key="type"
+                    type="button"
+                    class="px-2.5 py-1 text-xs font-medium transition rounded-md"
+                    :class="
+                      form.automation.match_type === type
+                        ? 'bg-n-brand text-n-brand-text'
+                        : 'bg-n-alpha-2 text-n-slate-11 hover:text-n-slate-12'
+                    "
+                    @click="form.automation.match_type = type"
+                  >
+                    {{ t(`INSTAGRAM_AUTOMATIONS.MATCH.${type.toUpperCase()}`) }}
+                  </button>
+                </div>
                 <input
-                  v-model="form.automation.dm_link"
-                  type="url"
-                  :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_LINK_PH')"
-                  class="flex-1"
-                  :class="[INPUT_CLASS]"
-                />
-                <input
-                  v-model="form.automation.dm_button_label"
+                  v-if="form.automation.match_type !== 'any'"
+                  v-model="form.automation.keywords"
                   type="text"
-                  :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_BUTTON_PH')"
-                  class="w-40"
-                  :class="[INPUT_CLASS]"
+                  :placeholder="t('INSTAGRAM_AUTOMATIONS.KEYWORDS_PH')"
+                  :class="INPUT_CLASS"
                 />
               </div>
-            </div>
 
-            <!-- Resposta publica -->
-            <div class="flex flex-col gap-1.5">
-              <label class="text-xs font-medium text-n-slate-11">
-                {{ t('INSTAGRAM_AUTOMATIONS.PUBLIC_REPLY') }}
+              <!-- DM -->
+              <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-medium text-n-slate-11">
+                  {{ t('INSTAGRAM_AUTOMATIONS.DM_MESSAGE') }}
+                </label>
+                <textarea
+                  v-model="form.automation.dm_message"
+                  rows="2"
+                  :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_MESSAGE_PH')"
+                  class="resize-none"
+                  :class="[INPUT_CLASS]"
+                />
+                <div class="flex gap-2">
+                  <input
+                    v-model="form.automation.dm_link"
+                    type="url"
+                    :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_LINK_PH')"
+                    class="flex-1"
+                    :class="[INPUT_CLASS]"
+                  />
+                  <input
+                    v-model="form.automation.dm_button_label"
+                    type="text"
+                    :placeholder="t('INSTAGRAM_AUTOMATIONS.DM_BUTTON_PH')"
+                    class="w-40"
+                    :class="[INPUT_CLASS]"
+                  />
+                </div>
+              </div>
+
+              <!-- Resposta publica -->
+              <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-medium text-n-slate-11">
+                  {{ t('INSTAGRAM_AUTOMATIONS.PUBLIC_REPLY') }}
+                </label>
+                <input
+                  v-model="form.automation.public_reply"
+                  type="text"
+                  :placeholder="t('INSTAGRAM_AUTOMATIONS.PUBLIC_REPLY_PH')"
+                  :class="INPUT_CLASS"
+                />
+              </div>
+
+              <label
+                class="flex items-center gap-2 text-sm cursor-pointer text-n-slate-12"
+              >
+                <input
+                  v-model="form.automation.once_per_user"
+                  type="checkbox"
+                  class="accent-n-brand size-4"
+                />
+                {{ t('INSTAGRAM_AUTOMATIONS.ONCE_PER_USER') }}
               </label>
-              <input
-                v-model="form.automation.public_reply"
-                type="text"
-                :placeholder="t('INSTAGRAM_AUTOMATIONS.PUBLIC_REPLY_PH')"
-                :class="INPUT_CLASS"
+            </div>
+            <div class="lg:sticky lg:top-1 h-fit">
+              <InstagramDmPreview
+                :public-reply="form.automation.public_reply"
+                :dm-message="form.automation.dm_message"
+                :dm-link="form.automation.dm_link"
+                :dm-button-label="form.automation.dm_button_label"
               />
             </div>
-
-            <label
-              class="flex items-center gap-2 text-sm cursor-pointer text-n-slate-12"
-            >
-              <input
-                v-model="form.automation.once_per_user"
-                type="checkbox"
-                class="accent-n-brand size-4"
-              />
-              {{ t('INSTAGRAM_AUTOMATIONS.ONCE_PER_USER') }}
-            </label>
           </div>
         </fieldset>
 
